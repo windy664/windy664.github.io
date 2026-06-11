@@ -1,5 +1,5 @@
 navbar:
-  blog_title: "Windy's Blog"
+  blog_title: "风吟の博客"
   ground_glass:
     enable: true
     px: 10
@@ -16,7 +16,7 @@ index:
   banner_mask_alpha: 0.3
   slogan:
     enable: true
-    text: "Minecraft 开发者 / 记录折腾历程"
+    text: "风吟 / 记录折腾历程"
 
 post:
   banner_img: https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?w=1600&q=80
@@ -35,8 +35,8 @@ about:
   banner_img: https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=1600&q=80
   banner_img_height: 60
   avatar: https://github.com/windy664.png
-  name: "windy664"
-  introduce: "Minecraft 开发者 / NeoForge 混合服端 Youer 作者"
+  name: "风吟"
+  introduce: "风吟"
   icons:
     - { class: "iconfont icon-github-fill", link: "https://github.com/windy664", tip: "GitHub" }
 
