@@ -11,7 +11,7 @@ navbar:
     - { key: "about", link: "/about/", icon: "iconfont icon-user-fill" }
 
 index:
-  banner_img: https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=1600&q=80
+  banner_img: https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1600&q=80
   banner_img_height: 100
   banner_mask_alpha: 0.3
   slogan:
@@ -19,24 +19,24 @@ index:
     text: "风吟 / 记录折腾历程"
 
 post:
-  banner_img: https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?w=1600&q=80
+  banner_img: https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1600&q=80
   banner_img_height: 60
   banner_mask_alpha: 0.3
 
 archive:
-  banner_img: https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1600&q=80
+  banner_img: https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1600&q=80
   banner_img_height: 60
 
 tag:
-  banner_img: https://images.unsplash.com/photo-1511300636408-a63a89df3482?w=1600&q=80
+  banner_img: https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&q=80
   banner_img_height: 60
 
 about:
-  banner_img: https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=1600&q=80
+  banner_img: https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=1600&q=80
   banner_img_height: 60
   avatar: https://github.com/windy664.png
   name: "风吟"
-  introduce: "风吟"
+  introduce: "Java 后端开发者，专注复杂服务器生态，探索系统架构与 AI 时代的融合之道。"
   icons:
     - { class: "iconfont icon-github-fill", link: "https://github.com/windy664", tip: "GitHub" }
 
