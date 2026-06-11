@@ -93,10 +93,4 @@ Gradle 自身是 Java 写的，每个 Gradle 版本对运行它的 JDK 有最低
 
 灶台再高级，也不妨碍你用小火慢炖一道 Java 11 的菜。
 
-## 面试考点小结
-
-- **Gradle JVM ≠ Toolchain**：前者运行 Gradle 本身，后者编译你的代码，版本相互独立
-- **Toolchain 是声明式的**，配合 foojay 可自动下载 JDK，解决「交叉编译要本机有对应 JDK」的痛点
-- **Gradle 版本对运行 JDK 有下限**（Gradle 9 → JDK 17+），与项目编译目标无关
-- **团队一致性**：统一 toolchain 声明，保证产物字节码一致，避免环境漂移
-- **排错思路**：看到「无效的 Gradle JDK」先分清报的是 Gradle JVM 还是 toolchain
+分清这两个 JDK 之后，那句「无效的 Gradle JDK 配置」就再也不会让我手忙脚乱——它说的永远是灶台（Gradle JVM），跟我项目要的火候（toolchain）没关系。下次再有人卡在「我项目是 Java 11，为什么 Gradle 不让我把 JDK 设成 11」，我大概知道该从哪句话开始解释了。

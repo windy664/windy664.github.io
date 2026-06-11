@@ -112,10 +112,8 @@ javac --release 11 Foo.java
 
 `--release 11` 还会把 API 限制在 Java 11 范围（用了 Java 17 才有的 API 会编译报错），比单纯的 `-target` 更安全。Gradle 的 toolchain 本质就是在帮你管这件事。
 
-## 面试考点小结
+## 写在最后
 
-- **class 文件结构**：魔数 `0xCAFEBABE`、major/minor version，major = Java版本 + 44
-- **JVM 兼容方向**：只向后兼容（新 JVM 跑老 class），不向前兼容
-- **`UnsupportedClassVersionError`** 的根因：运行时 JVM 版本低于编译时 target
-- **`--release` vs `-target`**：前者额外做 API 边界检查，是跨版本编译的推荐做法
-- **工程结论**：公共库/SDK 编译到最低支持版本，避免把运行环境逼上高版本 JDK
+这个坑本质上是「我想偷懒用一个 JAR 通吃所有平台」撞上了「JVM 不向前兼容」这堵硬墙。退一步看，平台各自要求什么 Java 版本是它们自己的事，我能控制的只有「自己的字节码编到多低」。想清楚这一点，拆产物就是顺理成章的结论——而不是一头钻进单 JAR 的牛角尖，再被构建工具反复教做人。
+
+也算给自己提了个醒：跨平台/跨版本的兼容性问题，先看清楚每一端的下限在哪，再决定架构，比埋头写代码重要得多。

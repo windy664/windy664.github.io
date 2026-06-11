@@ -88,10 +88,6 @@ shadowJar {
 - `minimize()`：shadow 做 tree-shaking，删掉没被引用到的 class（但对反射加载的库要小心，可能误删）
 - 把可选 Provider 拆成独立产物，按需分发
 
-## 面试考点小结
+## 写在最后
 
-- **平台依赖模型差异**：Bukkit/Paper 有运行时库加载机制，Velocity 没有，必须 fat jar
-- **`compileOnly` vs `implementation`**：区分「平台已提供」与「需自带」，是插件依赖管理的核心判断
-- **插件类加载隔离**：每个插件独立 classloader，既隔离也可能因 shade 引入版本冲突
-- **relocate（包重定位）**：解决 shade 库与平台/其他插件的版本冲突，用确定性换体积
-- **fat jar 取舍**：体积 vs 确定性，可用 `minimize()` 或拆产物缓解
+fat jar 不是什么高级技巧，而是 Velocity 的依赖模型逼出来的必选项。真正要理解的就一句话：**谁负责提供运行时依赖**——平台提供的用 `compileOnly`，平台不管的自己 shade。想通这点，`NoClassDefFoundError` 也好、版本冲突也好，基本都能提前预判，而不是等服主报错了才回头查。
