@@ -1,0 +1,49 @@
+navbar:
+  blog_title: "Windy's Blog"
+  ground_glass:
+    enable: true
+    px: 10
+    alpha: 0.6
+  menu:
+    - { key: "home", link: "/", icon: "iconfont icon-home-fill" }
+    - { key: "archive", link: "/archives/", icon: "iconfont icon-archive-fill" }
+    - { key: "tag", link: "/tags/", icon: "iconfont icon-tags-fill" }
+    - { key: "about", link: "/about/", icon: "iconfont icon-user-fill" }
+
+index:
+  banner_img: https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=1600&q=80
+  banner_img_height: 100
+  banner_mask_alpha: 0.3
+  slogan:
+    enable: true
+    text: "Minecraft 开发者 / 记录折腾历程"
+
+post:
+  banner_img: https://images.unsplash.com/photo-1517180102446-f3ece451e9d8?w=1600&q=80
+  banner_img_height: 60
+  banner_mask_alpha: 0.3
+
+archive:
+  banner_img: https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1600&q=80
+  banner_img_height: 60
+
+tag:
+  banner_img: https://images.unsplash.com/photo-1511300636408-a63a89df3482?w=1600&q=80
+  banner_img_height: 60
+
+about:
+  banner_img: https://images.unsplash.com/photo-1542831371-29b0f74f9713?w=1600&q=80
+  banner_img_height: 60
+  avatar: https://github.com/windy664.png
+  name: "windy664"
+  introduce: "Minecraft 开发者 / NeoForge 混合服端 Youer 作者"
+  icons:
+    - { class: "iconfont icon-github-fill", link: "https://github.com/windy664", tip: "GitHub" }
+
+footer:
+  statistics:
+    enable: false
+  content: 'Powered by <a href="https://hexo.io" target="_blank">Hexo</a> &amp; <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank">Fluid</a>'
+
+custom_css:
+  - /css/custom.css
