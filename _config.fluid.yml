@@ -47,3 +47,11 @@ footer:
 
 custom_css:
   - /css/custom.css
+
+inject:
+  head:
+    - '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.css">'
+  footer:
+    - '<script src="https://cdn.jsdelivr.net/npm/aplayer/dist/APlayer.min.js"></script>'
+    - '<script src="https://cdn.jsdelivr.net/npm/meting@2/dist/Meting.min.js"></script>'
+    - '<meting-js server="netease" type="playlist" id="5311066" fixed="true" autoplay="false" loop="all" order="random" volume="0.6" mutex="true"></meting-js>'
