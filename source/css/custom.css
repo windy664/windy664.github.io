@@ -6,13 +6,38 @@
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 16px !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important;
 }
 
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-6px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+/* ===== 文章列表卡片入场动画 ===== */
+#board .col-lg-6 {
+  opacity: 0;
+  transform: translateY(30px);
+  animation: cardFadeIn 0.5s ease forwards;
+}
+
+#board .col-lg-6:nth-child(1) { animation-delay: 0.05s; }
+#board .col-lg-6:nth-child(2) { animation-delay: 0.10s; }
+#board .col-lg-6:nth-child(3) { animation-delay: 0.15s; }
+#board .col-lg-6:nth-child(4) { animation-delay: 0.20s; }
+#board .col-lg-6:nth-child(5) { animation-delay: 0.25s; }
+#board .col-lg-6:nth-child(6) { animation-delay: 0.30s; }
+#board .col-lg-6:nth-child(7) { animation-delay: 0.35s; }
+#board .col-lg-6:nth-child(8) { animation-delay: 0.40s; }
+#board .col-lg-6:nth-child(9) { animation-delay: 0.45s; }
+#board .col-lg-6:nth-child(10) { animation-delay: 0.50s; }
+
+@keyframes cardFadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* ===== Navbar Glass Effect ===== */
@@ -34,6 +59,11 @@
   box-shadow: none !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
   backdrop-filter: blur(6px);
+  transition: transform 0.2s ease, background 0.2s ease !important;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
 }
 
 /* ===== Tags ===== */
@@ -46,6 +76,6 @@
 }
 
 .tag-cloud-tags a:hover {
-  background: rgba(255, 255, 255, 0.15) !important;
+  background: rgba(255, 255, 255, 0.18) !important;
   transform: translateY(-2px);
 }
