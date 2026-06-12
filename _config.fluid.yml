@@ -1,5 +1,5 @@
 navbar:
-  blog_title: "风吟の博客"
+  blog_title: "Torine の 博客"
   ground_glass:
     enable: true
     px: 10
@@ -16,7 +16,7 @@ index:
   banner_mask_alpha: 0.3
   slogan:
     enable: true
-    text: "风吟 / 记录折腾历程"
+    text: "Torine / 记录折腾历程"
 
 post:
   banner_img: https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1600&q=80
@@ -35,7 +35,7 @@ about:
   banner_img: https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=1600&q=80
   banner_img_height: 60
   avatar: https://github.com/windy664.png
-  name: "风吟"
+  name: "Torine"
   introduce: "Java 后端开发者，专注复杂服务器生态，探索系统架构与 AI 时代的融合之道。"
   icons:
     - { class: "iconfont icon-github-fill", link: "https://github.com/windy664", tip: "GitHub" }
