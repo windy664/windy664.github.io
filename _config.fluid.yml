@@ -22,6 +22,17 @@ post:
   banner_img: https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1600&q=80
   banner_img_height: 60
   banner_mask_alpha: 0.3
+  meta:
+    # 单篇浏览量（不蒜子，免费零注册；本地跑显示的大数字是正常的，部署后正常）
+    views:
+      enable: true
+      source: "busuanzi"
+    # 阅读时长：主题默认 wpm=60 把技术长文估成 80+ 分钟，严重偏高。
+    # 调高 wpm 让估算贴近真实中文技术阅读速度（≈10 分/本篇）。
+    min2read:
+      enable: true
+      awl: 2
+      wpm: 500
 
 archive:
   banner_img: https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1600&q=80
@@ -42,7 +53,8 @@ about:
 
 footer:
   statistics:
-    enable: false
+    enable: true
+    source: "busuanzi"
   content: 'Powered by <a href="https://hexo.io" target="_blank">Hexo</a> &amp; <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank">Fluid</a>'
 
 custom_css:
