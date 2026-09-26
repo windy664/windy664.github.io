@@ -410,18 +410,65 @@ adb install /tmp/Settings.apk
 
 **教训：别手贱卸载系统应用。**
 
-### 方法三：app_process 跑 Java
+### 方法三：app_process 跑 Java（深入版）
 
-想在设备上跑一段 Java 代码，反射调用 `AccountManager` 拿 serviceToken。
+想在设备上跑一段 Java 代码，直接通过 Binder IPC 调用 `AccountManager` 和 `miui.sedc` 拿 serviceToken 和硬件签名。
+
+首先需要把 Java 编译成 DEX 格式（Android 运行时不认 `.class` 文件）：
 
 ```bash
-javac GetToken.java
-adb push GetToken.class /data/local/tmp/
-adb shell "cd /data/local/tmp && app_process / GetToken"
-# Aborted
+# 安装 Android SDK build-tools
+sdkmanager "build-tools;34.0.0" "platforms;android-34"
+
+# 编译（注意用 Java 11 target，d8 不支持高版本 class 格式）
+javac -source 11 -target 11 -cp android.jar -d . GetToken.java
+
+# 转成 DEX
+d8 --output dex_out GetToken.class
+
+# 推送到设备运行
+adb push dex_out/classes.dex /data/local/tmp/GetToken.dex
+adb shell "CLASSPATH=/data/local/tmp/GetToken.dex app_process / GetToken"
 ```
 
-崩了。Android 运行时需要 DEX 格式，不认 `.class` 文件。设备上没有 `d8` 工具，本地也没装 Android SDK。死路。
+这次成功跑起来了！结果很有意思：
+
+```
+=== BootLoader Unlock Helper ===
+UID: 2000
+
+[1] Accessing AccountManager via ServiceManager...
+  IAccountManager binder: android.os.BinderProxy@a70c813
+  Binder interface: android.accounts.IAccountManager
+  Binder alive: true
+  getAccounts transact ok: true
+  No accounts returned          ← 权限不足，看不到账号
+
+[2] Accessing miui.sedc (Security Device Credential)...
+  miui.sedc binder: android.os.BinderProxy@ad2a50
+  Binder interface: com.xiaomi.security.devicecredential.ISecurityDeviceCredentialManager.v1
+  Binder alive: true
+  isThisDeviceSupported: -1
+  getSecurityDeviceId: fid=null, errCode=73
+  sign: errCode=-1, signedLen=73
+  sign (first 32 bytes): 4e00650065006400200063006f006d002e007800690061006f006d0069002e00
+
+[3] Listing system services...
+  - account
+  - miui.sedc
+  - xiaomi.joyose
+  ... (30 个小米/MIUI 相关服务)
+```
+
+**关键发现：**
+
+1. **Shell UID (2000) 能拿到两个关键服务的 Binder！** `IAccountManager` 和 `miui.sedc` 都能连上。
+2. **但操作全被拒绝。** AccountManager 的 `getAccounts` 返回空（权限不足），miui.sedc 的 `sign` 返回的错误信息解码后是 `"Need com.xiaomi."`——**它在检查调用者包名**。
+3. **30 个小米/MIUI 服务可见**，但都有权限校验。
+
+这说明小米在 Binder 层面就做了调用者身份校验。你虽然能"看到"这些服务，但你不是 `com.xiaomi` 包名的应用，它就不帮你干活。
+
+**这条路也走不通。**
 
 ### 方法四：伪造请求
 
@@ -488,7 +535,7 @@ frida-server 要 root。又是一堵墙。
 |------|--------|
 | 原始脚本 | 日志格式变了，而且日志≠请求数据 |
 | 降级 Settings | 系统阻止安装 |
-| app_process | 没有 DEX 转换工具 |
+| app_process + Binder IPC | Shell UID 能连服务，但 miui.sedc 校验包名（"Need com.xiaomi."），AccountManager 校验权限 |
 | 伪造请求 | 缺 serviceToken + 硬件签名 |
 | mitmproxy | HTTPS 要 CA 证书（要 root）|
 | iptables | 要 root |
@@ -508,6 +555,35 @@ frida-server 要 root。又是一堵墙。
 - 所有关键操作都要服务器配合
 
 你没有 root，就看不到 serviceToken；没有 serviceToken，服务器就不理你；没有硬件密钥，你就伪造不了签名。
+
+---
+
+## 深入分析：Binder IPC 层面的权限校验
+
+通过 app_process 在设备上跑 Java 代码（编译成 DEX 格式），我成功从 shell UID (2000) 连接到了两个关键系统服务的 Binder：
+
+| 服务 | Binder 接口 | 连接 | 操作结果 |
+|------|------------|------|---------|
+| account | `android.accounts.IAccountManager` | ✅ | getAccounts 返回 -2/-4（权限不足）|
+| miui.sedc | `ISecurityDeviceCredentialManager.v1` | ✅ | sign 返回 `"Need com.xiaomi."`（包名校验）|
+
+这意味着小米在**两个层面**做了防护：
+
+**1. miui.sedc：包名校验**
+
+`miui.sedc` 是一个系统服务，通过 Binder IPC 提供硬件签名功能。但它的 `sign()` 方法在执行前会检查调用者的 UID 对应的包名。Shell UID (2000) 对应的是 `com.android.shell`，不是 `com.xiaomi`，所以直接被拒绝。
+
+错误信息 `"Need com.xiaomi."` 说明服务端期望调用者是小米账号应用（`com.xiaomi.account`）或设置应用（`com.android.settings`，UID 1000）。
+
+**2. AccountManager：权限校验**
+
+Android 的 AccountManager 系统服务对 `getAccounts()` 做了权限控制。Shell UID 没有 `GET_ACCOUNTS` 权限，所以即使 Binder 连接成功，返回的也是错误码（-2 或 -4），不是账号列表。
+
+**3. ActivityThread：无 Context**
+
+`app_process` 环境下 `ActivityThread.systemMain()` 返回 null，意味着无法获取系统 Context。没有 Context，`AccountManager.get(context)` 就无法调用。即使用反射绕过了 ServiceManager 的隐藏 API 限制，也过不了这一关。
+
+**结论：Binder IPC 能"看到"服务，但过不了身份校验。** 这是 Android 的安全模型在起作用——UID-based 权限控制。Shell UID 的权限被严格限制，不能访问其他应用的数据或调用需要特权的系统服务。
 
 ---
 
