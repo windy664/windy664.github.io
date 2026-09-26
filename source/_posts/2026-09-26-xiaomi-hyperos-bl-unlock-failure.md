@@ -1,5 +1,5 @@
 ---
-title: 我花了一整天试图破解小米 HyperOS 2.0 的 BootLoader 加密，结果被上了一课
+title: 硬刚小米 HyperOS 2.0 BootLoader 加密：一场注定失败的逆向工程
 date: 2026-09-26 21:00:00
 tags:
   - Android
@@ -13,7 +13,7 @@ categories:
   - 技术分享
 ---
 
-# 我花了一整天试图破解小米 HyperOS 2.0 的 BootLoader 加密，结果被上了一课
+# 硬刚小米 HyperOS 2.0 BootLoader 加密：一场注定失败的逆向工程
 
 > 利益相关：一个想 root 自己手机的普通用户，被小米的安全工程师教做人了。
 
@@ -23,13 +23,13 @@ categories:
 
 **没 root 的情况下，HyperOS 2.0 的 BootLoader 绑定加密无解。**
 
-不是"很难"，是"理论上不可能"。小米这次把 RSA 私钥放在了服务器端，你在客户端做的任何操作，最终都要服务器点头。而服务器会检查你的设备有没有在小米社区申请过解锁授权。没授权？30001 错误，谢谢惠顾。
+不是"很难"，是"理论上不可能"。小米这次用了硬件级安全签名 + 服务端 RSA 私钥 + nonce 防重放的三重保护，你在客户端做的任何操作，最终都要服务器点头。而服务器会检查你的设备有没有在小米社区申请过解锁授权。没授权？30001 错误，谢谢惠顾。
 
-想绕过？你需要改数据里的 `rom_version` 字段。想改数据？你需要解密。想解密？你需要 RSA 私钥。私钥在哪？在小米服务器上。
+想绕过？你需要改数据里的 `rom_version` 字段。想改数据？你需要能伪造设备签名。想伪造签名？你需要设备的硬件密钥——那个密钥烧在芯片里，拿不出来。
 
 **死锁了。**
 
-下面是我这一天的完整折腾记录。
+下面是我这一天的完整折腾记录，以及从 Settings APK 里逆向出来的完整加密协议。
 
 ---
 
@@ -96,39 +96,18 @@ adb pull /system_ext/priv-app/Settings/Settings.apk /tmp/Settings_device.apk
 
 105MB，里面一堆 DEX 文件。我主要看 `classes2.dex` 和 `classes4.dex`。
 
-用 `strings` 配合十六进制编辑器翻了半天，挖出来不少东西。
+用 JADX 1.5.6 反编译，出了 18108 个类，127 个错误。重点看 `com.android.settings.bootloader` 包下的几个类：
 
-**RSA 公钥**（`classes2.dex` 偏移 7116962）：
-
-```
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxPEmV1vZ60qc39gWvaSc
-7QgV/Ltc95eTBiWsRcN5VDeqjGwRPmk7TBXvU+YQ6q2LrfiaDQYg8ZwxjwUTsWoL
-J7l8AHE0WdUEvdV36+BMbB9w7ts2IISZZNnJyyZleU+SImWYRybKkTPX//Ld/bgK
-NFz3dxJzYxLXdKzcZogHLI2Mvvj31/ZmqvKuRxXBQ2iU4oSPthQRXFY+KbQJ1Z3Z
-sFzMJfGaY1jj+8ymUd4zWGXgztQLuvpUNtiVHGW1WhP8854yJqbQ1VcqfIueKR74
-qoQgUbXHFuYbvz6B0c+bEgJ/tn/bXcM8Zo8aADFgZNCChbzAhB9wf3zx2RLJe7aN
-awIDAQAB
-```
-
-RSA-2048，公钥指数 65537。
-
-**其他密钥**（`classes2.dex` 偏移 6167000-6169000 区域）：
-
-| 偏移 | 值 | 用途 |
-|------|-----|------|
-| 6167963 | `0102030405060708` | 旧版 AES IV（新版没用了）|
-| 6168451 | `10f29ff413c89c8de02349cb3eb9a5f5...` | HMAC 签名密钥 |
-| 6168583 | `158a7dbb3a76489a81a76ecd24a452be` | 未知，可能是另一个 AES 密钥 |
-
-**关键字符串**：`RSA/ECB/PKCS1Padding`、`mEncrytedKey`（注意 typo）、`mSecretKey`、`encryptMsg`、`LogEncryptor`……
-
-到这里我已经意识到情况不对了——有 RSA 公钥，意味着新版用的是非对称加密。公钥在客户端，私钥在服务器。这意味着我**永远解不了**客户端的加密数据。
+- `LogEncryptor.java` — 日志加密器
+- `CloudDeviceStatus.java` — 绑定流程核心
+- `Utils.java` — 工具类（账号、设备ID、签名等）
+- `MiuiFidSigner.java` — 硬件级设备签名
 
 ---
 
 ## 加密协议：小米到底改了什么
 
-### 旧版（MIUI）
+### 旧版（MIUI 时代）
 
 ```python
 DATA_PASS = b"20nr1aobv2xi8ax4"   # 硬编码
@@ -139,17 +118,178 @@ AES-128-CBC，密钥写死在代码里。谁都能解。GitHub 上的工具就�
 
 ### 新版（HyperOS 2.0）
 
-整个推翻重来了：
+**注意：这里有个关键误解需要澄清。**
 
-1. 每次请求生成**随机 AES 密钥**（`KeyGenerator.getInstance("AES")`）
-2. AES-CBC 加密 JSON 数据
-3. **RSA-2048 公钥加密 AES 密钥**
-4. 拼接格式：`#&^<RSA加密的AES密钥>!!<AES加密的数据>^&#`
-5. HMAC-SHA1 签名（签名密钥没变）
+之前我一直在研究 `LogEncryptor` 类，以为它就是请求加密的核心。实际上，**`LogEncryptor` 只用于 logcat 日志加密，不是请求数据加密**。真正的请求数据是明文 form data 发出去的，靠的是 HMAC 签名 + 硬件设备凭证来保证完整性。
 
-关键区别：**AES 密钥每次都不一样，而且被 RSA 保护了**。旧版的硬编码密钥完全没用。
+#### LogEncryptor（日志加密）
 
-RSA 公钥虽然在 DEX 里能找到，但**私钥只在服务器上**。你能加密，但你解不了。
+这个类的构造函数里有一套完整的 RSA+AES 混合加密：
+
+```java
+// AES-256，不是 128！
+KeyGenerator keyGenerator = KeyGenerator.getInstance("AES");
+keyGenerator.init(256);
+SecretKey secretKeyGenerateKey = keyGenerator.generateKey();
+
+// RSA-2048 公钥加密 AES 密钥
+Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+cipher.init(Cipher.ENCRYPT_MODE, publicKey);
+this.mEncrytedKey = Base64.encodeToString(cipher.doFinal(secretKeyGenerateKey.getEncoded()), 2);
+```
+
+加密后的日志格式：`#&^<RSA加密的AES密钥>!!<AES加密的数据>^&#`
+
+- **AES 算法**：AES-256-CBC（不是之前猜的 AES-128）
+- **IV**：`"bootloaderXiaomi"`（16 字节，不是旧版的 `0102030405060708`）
+- **AES 密钥**：每次请求随机生成，被 RSA-2048 公钥保护
+- **RSA 公钥**：硬编码在 DEX 里，私钥只在服务器上
+
+这个加密只用在 `Log.i()` 输出的日志里，方便开发者调试。**实际发给服务器的 POST 数据不走这个加密。**
+
+#### 真正的请求签名机制
+
+`CloudDeviceStatus.bindAccountWithDevice()` 是绑定流程的核心。它做的事情是：
+
+**1. 收集设备信息**
+
+```java
+map.put("userId", accountName);           // 小米账号
+map.put("device", Utils.getModDevice());  // 设备代号
+map.put("rom_version", Build.VERSION.INCREMENTAL);  // ROM 版本
+map.put("cloudsp_devId", Utils.getDeviceId(context)); // 设备 ID
+map.put("cloudsp_cpuId", getHardwardId(context));     // CPU ID
+map.put("cloudsp_product", Build.DEVICE);  // 产品名
+map.put("cloudsp_fid", fid);               // 安全设备 ID
+map.put("cloudsp_nonce", getNonce(context, fid)); // 防重放 nonce
+```
+
+**2. 硬件签名**
+
+```java
+byte[] signData = getSignData(context, map);
+map.put("cloudp_sign", Utils.binToHex(signData).toLowerCase());
+```
+
+`getSignData()` 的签名内容是：所有 `cloudsp_` 开头的字段按字典序排列拼接，前面加上路径。然后调用 `MiuiFidSigner.signWithDeviceCredential()` 进行硬件级签名。
+
+**3. HMAC 签名**
+
+```java
+Mac mac = Mac.getInstance("HmacSHA1");
+mac.init(new SecretKeySpec("10f29ff413c89c8de02349cb3eb9a5f510f29ff413c89c8de02349cb3eb9a5f5".getBytes(), "HmacSHA1"));
+String sign = binToHex(mac.doFinal(("POST\n/v1/unlock/applyBind\ndata=" + data + "&sid=miui_sec_android").getBytes()));
+```
+
+HMAC 密钥没变，还是那个 64 字符的硬编码值。
+
+**4. 带上 Cookie 认证**
+
+```java
+ExtendedAuthToken authToken = Utils.getAuthToken(context);
+String encryptedAccountName = Utils.getEncryptedAccountName(context);
+cookie = "serviceToken=" + authToken.authToken + ";cUserId=" + encryptedAccountName;
+```
+
+**5. 发送请求**
+
+```java
+new XHttpClient().syncPost("https://unlock.update.miui.com/v1/unlock/applyBind", headers, formData);
+```
+
+POST 数据就是普通的 form data，没有额外加密。安全靠的是：
+- **serviceToken** 验证身份
+- **cloudp_sign** 验证数据完整性（硬件签名）
+- **sign** 验证请求完整性（HMAC）
+- **nonce** 防重放攻击
+
+---
+
+## 关键组件分析
+
+### MiuiFidSigner — 硬件签名
+
+```java
+public class MiuiFidSigner {
+    // 获取安全设备 ID
+    public static String getFid(Context context) {
+        SecurityDeviceCredentialAbility ability = new SecurityDeviceCredentialAbility(context);
+        return ability.getSecurityDeviceId();
+    }
+    
+    // 用设备凭证签名
+    public static byte[] signWithDeviceCredential(Context context, byte[] data, boolean flag) {
+        SecurityDeviceCredentialAbility ability = new SecurityDeviceCredentialAbility(context);
+        return ability.signWithDeviceCredential(data, flag);
+    }
+}
+```
+
+`SecurityDeviceCredentialAbility` 是小米的安全 SDK，底层调用的是芯片级安全模块（TrustZone/TEE）。设备私钥烧在硬件里，软件层面**拿不出来**。你只能让它帮你签名，但你不知道签名密钥是什么。
+
+这就是为什么你没法伪造签名——你需要这台特定设备的硬件密钥，而这个密钥从不离开安全区域。
+
+### Utils — 工具类
+
+```java
+// 获取小米账号
+Account[] accounts = AccountManager.get(context).getAccountsByType("com.xiaomi");
+
+// 获取设备 ID
+XDeviceInfo.syncGet(context).deviceId;
+
+// 获取硬件 ID（CPU ID）
+SystemProperties.get("ro.boot.cpuid", "");  // 或 /proc/serial_num
+
+// 获取 IMSI（SIM 卡标识）
+String imsi = telephonyManager.getSubscriberId(subscriptionId);
+// IMSI 会被 SHA-256 加盐哈希：
+String hashedImsi = SHA256(imsi + "2jkkewm2OPMBEz7yhl1nZ995OMjOKr6q7gm1Dl0T3EwxmycEIcwr8W3tQIwPLqhm");
+
+// 获取 auth token
+AccountManager.getAuthToken(account, "micloudfind", ...);
+```
+
+### CloudDeviceStatus — 完整流程
+
+```
+bindAccountWithDevice(context)
+├── Utils.getAccountName()        // 小米账号名
+├── Utils.getModDevice()          // 设备代号
+├── Utils.getDeviceId()           // 设备 ID
+├── getHardwardId()               // CPU ID
+├── MiuiFidSigner.getFid()        // 安全设备 ID
+├── getNonce(context, fid)        // 从服务器获取 nonce
+│   └── GET /v1/micloud/nonce
+├── getSignData(context, map)     // 硬件签名
+│   └── MiuiFidSigner.signWithDeviceCredential()
+├── getHMacSign(path, data)       // HMAC-SHA1 签名
+├── getCookie(context)            // serviceToken + cUserId
+│   └── Utils.getAuthToken()
+└── XHttpClient.syncPost()        // 发送请求
+    └── POST https://unlock.update.miui.com/v1/unlock/applyBind
+```
+
+---
+
+## 关键发现：30001
+
+在折腾过程中，我一直用 logcat 监听 `CloudDeviceStatus`。虽然我自己的伪造请求全是 10000，但我捕获到了 **Settings 应用自己发的请求的服务器响应**：
+
+```json
+{
+  "code": 30001,
+  "description": "绑定失败，请前往小米社区内测中心申请授权后重试"
+}
+```
+
+这个信息量很大：
+
+1. **服务器能处理请求**。Settings 发的数据，服务器解析成功了（30001 不是 10000）。
+2. **问题在授权不在加密**。服务器拒绝是因为设备没授权，不是签名验证失败。
+3. **原来的绕过思路理论上是对的**。改 `V816`→`V14` 应该能绕过，但我改不了数据——因为数据被硬件签名保护了。
+
+我还看到 Settings 应用每隔一秒重试一次，每次都 30001。它自己也搞不定。
 
 ---
 
@@ -157,14 +297,14 @@ RSA 公钥虽然在 DEX 里能找到，但**私钥只在服务器上**。你能�
 
 ### 方法一：跑原始绕过脚本
 
-改了一下 logcat 解析逻辑，因为新版格式变了——`args` 和 `headers` 合并成一行了：
+改了一下 logcat 解析逻辑，因为新版格式变了——日志从明文变成了 `#&^...!!...^&#` 的 RSA+AES 加密格式：
 
 ```python
 if data.startswith("#&^") and "!!" in data:
     inner = data[3:-3]
     parts = inner.split("!!")
-    # parts[0] = RSA 加密的 AES 密钥
-    # parts[1] = AES 加密的数据
+    # parts[0] = RSA 加密的 AES 密钥（256-bit，随机生成）
+    # parts[1] = AES-CBC 加密的数据（IV = "bootloaderXiaomi"）
 ```
 
 解析没问题，下一步解密直接炸：
@@ -173,7 +313,7 @@ if data.startswith("#&^") and "!!" in data:
 ValueError: Data must be padded to 16 byte boundary in CBC mode
 ```
 
-废话。这是 RSA 加密后的东西，你拿 AES 密钥去解，当然不对。
+废话。这是 RSA 加密后的东西，你拿 AES 密钥去解，当然不对。而且就算你解开了，那也只是**日志**，不是实际请求数据。
 
 ### 方法二：降级 Settings APK
 
@@ -223,7 +363,7 @@ data = {
 
 完整数据、最小数据、不带 nonce、不带签名、带 Cookie、V14、V816——全 10000。连空数据都 10000。
 
-后来想明白了：服务器在检查 `serviceToken`（在 Cookie 头里）。Settings 应用发请求的时候会带上这个 token，但我拿不到。
+后来想明白了：服务器在检查 `serviceToken`（在 Cookie 头里）。Settings 应用发请求的时候会带上这个 token，但我拿不到。而且就算拿到了 token，没有硬件签名 `cloudp_sign`，服务器也不会认。
 
 ### 方法五：拦截 HTTP 流量
 
@@ -245,11 +385,11 @@ serviceToken 在 AccountManager 里。我试了 `content query`、`service call 
 Account {name=2807***558, type=com.xiaomi}
 ```
 
-但 token 是加密存储的，没有 root 看不到。
+但 token 是加密存储的，没有 root 看不到。而且就算拿到了 token，也还需要硬件签名。
 
 ### 方法七：Frida 动态 Hook
 
-最后一招。Frida 可以在运行时 hook Java 方法，我想 hook `LogEncryptor` 截获 AES 密钥。
+最后一招。Frida 可以在运行时 hook Java 方法，我想 hook `CloudDeviceStatus` 截获完整请求。
 
 ```bash
 pip3 install frida frida-tools
@@ -262,35 +402,14 @@ frida-server 要 root。又是一堵墙。
 
 ---
 
-## 关键发现：30001
-
-在折腾过程中，我一直用 logcat 监听 `CloudDeviceStatus`。虽然我自己的伪造请求全是 10000，但我捕获到了 **Settings 应用自己发的请求的服务器响应**：
-
-```json
-{
-  "code": 30001,
-  "description": "绑定失败，请前往小米社区内测中心申请授权后重试"
-}
-```
-
-这个信息量很大：
-
-1. **服务器能解密新格式**。Settings 发的 RSA+AES 数据，服务器处理成功了（30001 不是 10000）。
-2. **问题在授权不在加密**。服务器拒绝是因为设备没授权，不是解密失败。
-3. **原来的绕过思路是对的**。改 `V816`→`V14` 应该能绕过，但我改不了数据。
-
-我还看到 Settings 应用每隔一秒重试一次，每次都 30001。它自己也搞不定。
-
----
-
 ## 为什么所有方法都失败
 
 | 方法 | 卡在哪 |
 |------|--------|
-| 原始脚本 | 新加密解不了 |
+| 原始脚本 | 日志格式变了，而且日志≠请求数据 |
 | 降级 Settings | 系统阻止安装 |
 | app_process | 没有 DEX 转换工具 |
-| 伪造请求 | 缺 serviceToken |
+| 伪造请求 | 缺 serviceToken + 硬件签名 |
 | mitmproxy | HTTPS 要 CA 证书（要 root）|
 | iptables | 要 root |
 | strace | 要 root |
@@ -301,9 +420,14 @@ frida-server 要 root。又是一堵墙。
 
 而 root 需要解锁 BL，解锁 BL 需要绕过加密，绕过加密需要 root。
 
-小米这次的设计思路很清晰：**把信任根放在服务器端**。客户端只有公钥，能加密但解不了。所有关键操作都要服务器配合。而服务器只认两种情况：要么你在小米社区申请过授权，要么你把 `rom_version` 改成 MIUI 格式让它以为你是老设备。
+小米这次的设计思路很清晰：**把信任根放在硬件和服务器端**。
 
-前者是官方流程，后者需要你能修改加密数据——但你改不了。
+- 设备私钥烧在芯片里（TrustZone/TEE），软件拿不出来
+- RSA 私钥在服务器上，客户端只有公钥
+- serviceToken 在加密存储里，没有 root 看不到
+- 所有关键操作都要服务器配合
+
+你没有 root，就看不到 serviceToken；没有 serviceToken，服务器就不理你；没有硬件密钥，你就伪造不了签名。
 
 ---
 
@@ -311,12 +435,58 @@ frida-server 要 root。又是一堵墙。
 
 | | 旧版 (MIUI) | 新版 (HyperOS 2.0) |
 |---|---|---|
-| 加密 | AES-128-CBC，密钥硬编码 | RSA-2048 + AES-128-CBC，密钥随机 |
-| 数据格式 | 纯 Base64 | `#&^...!!...^&#` |
-| 密钥位置 | DEX 里写死了 | RSA 私钥只在服务器 |
+| 请求签名 | HMAC-SHA1（密钥硬编码）| HMAC-SHA1 + 硬件设备凭证 |
+| 日志加密 | 无 | RSA-2048 + AES-256-CBC |
+| 数据格式 | 纯 Base64 | `#&^...!!...^&#`（仅日志）|
+| 密钥位置 | DEX 里写死了 | 硬件安全模块 + 服务器 |
+| 设备验证 | 只看格式 | 硬件签名 + nonce + serviceToken |
 | Settings 降级 | 能装 | 装不了 |
-| 服务器验证 | 只看格式 | 看授权状态 |
 | 绕过难度 | 改个字段就行 | 理论上不可能 |
+
+---
+
+## 完整协议逆向结果
+
+以下是通过 JADX 静态分析得到的完整协议细节，供安全研究人员参考：
+
+### 请求流程
+
+```
+1. getAccountName()     → 小米账号名
+2. getDeviceId()        → XDeviceInfo.deviceId
+3. getHardwardId()      → CPU ID (ro.boot.cpuid 或 /proc/serial_num)
+4. getFid()             → SecurityDeviceCredentialAbility.getSecurityDeviceId()
+5. getNonce(fid)        → GET /v1/micloud/nonce?cloudsp_devId=...&cloudsp_fid=...&userId=...
+6. 组装参数              → userId, device, rom_version, cloudsp_*, heartbeat_mode
+7. getSignData()        → "POST&/mic/binding/v1/identified/device/account&cloudsp_cpuId=...&cloudsp_devId=..."
+                         → MiuiFidSigner.signWithDeviceCredential(data, true)
+8. getHMacSign()        → HMAC-SHA1("POST\n/v1/unlock/applyBind\ndata={json}&sid=miui_sec_android")
+9. getCookie()          → "serviceToken={authToken};cUserId={encryptedUserId}"
+10. POST /v1/unlock/applyBind  → form data {sid, data(json), sign}
+```
+
+### 密钥一览
+
+| 密钥 | 值 | 用途 |
+|------|-----|------|
+| HMAC 密钥 | `10f29ff413c89c8de02349cb3eb9a5f510f29ff413c89c8de02349cb3eb9a5f5` | 请求签名 |
+| 日志 AES IV | `bootloaderXiaomi` | 日志加密（不影响请求）|
+| 日志 RSA 公钥 | `MIIBIjAN...AQAB`（RSA-2048）| 日志 AES 密钥加密 |
+| 设备凭证 | 硬件安全模块存储 | 请求数据签名 |
+| IMSI 盐值 | `2jkkewm2OPMBEz7yhl1nZ995OMjOKr6q7gm1Dl0T3EwxmycEIcwr8W3tQIwPLqhm` | IMSI 哈希 |
+
+### API 端点
+
+| 端点 | 方法 | 用途 |
+|------|------|------|
+| `/v1/micloud/nonce` | GET | 获取防重放 nonce |
+| `/v1/unlock/applyBind` | POST | 绑定设备账号 |
+| `/v1/unlock/deviceHeartbeat` | POST | 设备心跳 |
+
+### 服务器域名
+
+- 中国版：`https://unlock.update.miui.com`
+- 国际版：`https://unlock.update.intl.miui.com`
 
 ---
 
@@ -332,18 +502,21 @@ frida-server 要 root。又是一堵墙。
 
 **社区申请**：最正规的途径。去小米社区内测中心申请。但中国版审核很严。
 
+**Xiaomi-BootLoader-Bypass**：目前在做的尝试是 logcat 监听 + 请求修改，理论上如果能拿到 serviceToken 并且能修改日志数据再重新发请求，可能还有戏。但硬件签名这关过不去。
+
 ---
 
 ## 写在最后
 
-折腾了一整天，白忙活。但也不是完全没收获——至少把 HyperOS 2.0 的加密协议从头到尾扒了一遍，从 DEX 里提取了 RSA 公钥和 HMAC 密钥，搞清楚了整个绑定流程的链路。
+折腾了一整天，白忙活。但也不是完全没收获——至少把 HyperOS 2.0 的加密协议从头到尾扒了一遍，从 DEX 里提取了所有密钥，搞清楚了整个绑定流程的链路。
 
-最大的教训：**安全是动态的**。去年能用的方法今年就不行了。小米这次的加密升级确实到位——RSA 私钥放服务器端，客户端永远拿不到，这个设计本身就没有绕过的空间。
+最大的教训：**安全是动态的**。去年能用的方法今年就不行了。小米这次的安全设计确实到位——硬件级签名 + 服务端 RSA + nonce 防重放，三层保护，每一层都需要不同的突破手段。
 
-除非你能攻破小米的服务器。
+想同时突破三层？除非你能物理访问芯片内部，或者找到内核提权漏洞。
 
-（别真去干啊。）
+对于普通用户来说，最靠谱的路还是去小米社区申请解锁授权。
 
 ---
 
 *2026-09-26 记录，基于 HyperOS 2.0.6.0.UMQCNXM。系统更新后加密机制可能有变化。*
+*技术分析基于 JADX 静态反编译，未进行动态调试（需要 root）。*
