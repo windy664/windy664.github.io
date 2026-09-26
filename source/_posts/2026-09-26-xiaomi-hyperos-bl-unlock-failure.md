@@ -272,6 +272,156 @@ bindAccountWithDevice(context)
 
 ---
 
+## 更多组件分析
+
+### BootloaderApplyActivity — 解锁警告
+
+用户在开发者选项里点击"设备解锁状态"时，会先进入一个 **5 步警告流程**。每步都有 5 秒倒计时，不能跳过：
+
+1. 警告解锁会清除数据
+2. 警告解锁会失去保修
+3. 警告解锁可能导致安全风险
+4. 警告解锁后可能无法收到系统更新
+5. 最终确认（"接受"按钮）
+
+最后一步调用 `setEnabled(true)`，设置系统属性：
+
+```java
+SystemProperties.set("persist.fastboot.enable", "1");  // 接受
+SystemProperties.set("persist.fastboot.enable", "0");  // 拒绝
+```
+
+这个属性只是让用户"同意"解锁流程，**不是解锁本身**。真正的绑定在 `BootloaderStatusActivity` 里。
+
+### HeartbeatJobService — 心跳机制
+
+绑定成功后，Settings 会注册一个**每日心跳任务**（Job ID: 44012）：
+
+```java
+// JobDispatcher.java
+new JobInfo.Builder(44012, new ComponentName(context, HeartbeatJobService.class))
+    .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)  // 需要网络
+    .setPeriodic(86400000L)   // 每24小时
+    .setPersisted(true)       // 重启后继续
+    .build();
+```
+
+心跳的逻辑：
+
+```java
+// HeartbeatJobService.java
+if (canSendHeartbeat(context)) {
+    int count = CloudDeviceStatus.sendHeartbeat(context);
+    if (count >= 30) {
+        cancelHeartbeatJob(context);  // 30次后取消（约30天）
+    }
+}
+```
+
+`canSendHeartbeat()` 检查：
+1. `ro.secureboot.lockstate` 必须是 `"locked"`（BL 还锁着）
+2. 当前小米账号必须和绑定时的账号一致
+
+心跳请求发到 `/v1/unlock/deviceHeartbeat`，携带 `cpuId`、`fid`、`product`、`uid` 和硬件签名。
+
+### SecurityDeviceCredentialAbility — 硬件签名 SDK
+
+这是小米的安全 SDK，通过 Binder IPC 与系统服务通信。它尝试连接两个服务：
+
+```java
+// 优先尝试小米账号服务
+Intent intent1 = new Intent("com.xiaomi.account.action.BIND_SECURITY_DEVICE_CREDENTIAL");
+intent1.setPackage("com.xiaomi.account");
+
+// 备选：查找设备服务
+Intent intent2 = new Intent("com.xiaomi.finddevice.action.BIND_SECURITY_DEVICE_CREDENTIAL");
+intent2.setPackage("com.xiaomi.finddevice");
+```
+
+底层系统服务名是 `miui.sedc`（Security Device Credential），通过 `ServiceManager.getService("miui.sedc")` 获取 Binder。
+
+AIDL 接口 `ISecurityDeviceCredentialManager` 定义了 4 个方法：
+
+| 方法 | 事务 ID | 用途 |
+|------|---------|------|
+| `isThisDeviceSupported()` | 1 | 检查设备是否支持硬件签名 |
+| `getSecurityDeviceId()` | 2 | 获取安全设备 ID (fid) |
+| `sign(type, data, flag)` | 3 | 用设备凭证签名数据 |
+| `forceReload()` | 4 | 强制重新加载设备凭证 |
+
+`signWithDeviceCredential(data, flag)` 实际上调用的是 `sign(1, data, flag)`，类型参数 1 表示使用设备凭证签名。
+
+**关键点**：如果硬件服务未就绪（errorCode -101），会自动重试（每500ms），最多等10秒。这说明硬件签名依赖于 TEE/TrustZone 的初始化。
+
+### RootManagementPreferenceController — 针对性封锁
+
+代码里有一个**针对特定设备的硬编码检查**：
+
+```java
+if (SystemProperties.getInt("ro.product.first_api_level", 31) > 30 
+    || isDeviceIn("sunstone", "moonstone")) {
+    // 显示"不支持 Root"页面
+    intent.setClassName(SECURITY_CENTER_PACKAGE_NAME, 
+        "com.miui.permcenter.root.NotSupportRootActivity");
+}
+```
+
+**sunstone** 就是 Redmi Note 12，**moonstone** 是 Redmi Note 12 Pro。小米直接把这两款设备列入了"不支持 Root"的黑名单，即使你通过了所有其他检查，也会被这个页面拦住。
+
+而且这个检查只在 `IS_STABLE_VERSION && !IS_INTERNATIONAL_BUILD` 时生效——也就是说**国际版和开发版不受此限制**。
+
+### OemUnlockPreferenceController — 标准 Android 解锁
+
+开发者选项里还有一个标准的 OEM 解锁开关，使用 Android 原生的 `OemLockManager`：
+
+```java
+OemLockManager oemLockManager = (OemLockManager) context.getSystemService("oem_lock");
+oemLockManager.setOemUnlockAllowedByUser(true);  // 允许解锁
+```
+
+但这个开关**只是告诉系统"用户同意解锁"**，实际解锁还是需要通过小米的绑定流程。而且如果设备是 SIM 锁定的（运营商锁），这个开关会被禁用。
+
+### ExtendedAuthToken — Token 结构
+
+serviceToken 实际上是两个值的组合：
+
+```java
+public final class ExtendedAuthToken {
+    public final String authToken;  // 实际的 token
+    public final String security;   // 安全密钥
+    
+    public static ExtendedAuthToken parse(String str) {
+        String[] parts = str.split(",");
+        return new ExtendedAuthToken(parts[0], parts[1]);
+    }
+}
+```
+
+从 AccountManager 获取时，返回格式是 `authToken,security`。发请求时只用 `authToken` 部分放在 Cookie 里。
+
+### FidNonce — Nonce 生成
+
+nonce 的生成过程：
+
+```java
+// 构建 JSON
+JSONObject json = new JSONObject();
+json.put("tp", "n");           // 类型：n=native, wb=web_view
+json.put("nonce", generated);  // 基于服务器时间生成
+json.put("v", version);        // 版本号
+
+// Base64 编码
+String plain = Base64.encodeToString(json.toString().getBytes("UTF-8"), 10);
+
+// 用设备凭证签名
+byte[] signature = fidSigner.sign(plain.getBytes("UTF-8"));
+String sign = Base64.encode(signature, 10);
+```
+
+最终 nonce 值是 `plain` + `sign` 的组合，发给 `/v1/micloud/nonce` 验证。
+
+---
+
 ## 关键发现：30001
 
 在折腾过程中，我一直用 logcat 监听 `CloudDeviceStatus`。虽然我自己的伪造请求全是 10000，但我捕获到了 **Settings 应用自己发的请求的服务器响应**：
@@ -487,6 +637,51 @@ frida-server 要 root。又是一堵墙。
 
 - 中国版：`https://unlock.update.miui.com`
 - 国际版：`https://unlock.update.intl.miui.com`
+
+### 系统服务架构
+
+```
+Settings App
+├── BootloaderApplyActivity    → 5步警告 → persist.fastboot.enable
+├── BootloaderStatusActivity   → 绑定入口 → CloudDeviceStatus
+├── HeartbeatJobService        → 每日心跳 → /v1/unlock/deviceHeartbeat
+│
+├── MiuiFidSigner              → 硬件签名代理
+│   └── SecurityDeviceCredentialAbility
+│       ├── com.xiaomi.account (BIND_SECURITY_DEVICE_CREDENTIAL)
+│       └── com.xiaomi.finddevice (BIND_SECURITY_DEVICE_CREDENTIAL)
+│           └── miui.sedc (系统服务, Binder IPC)
+│               ├── isThisDeviceSupported()
+│               ├── getSecurityDeviceId()
+│               ├── sign(type, data, flag)
+│               └── forceReload()
+│
+├── Utils
+│   ├── AccountManager → serviceToken (micloudfind)
+│   ├── XDeviceInfo → deviceId
+│   ├── SystemProperties → ro.boot.cpuid, ro.product.mod_device
+│   ├── TelephonyManager → IMSI (SHA-256 + salt)
+│   └── SharedPreferences → encrypted_user_id
+│
+└── CloudDeviceStatus
+    ├── getNonce() → GET /v1/micloud/nonce
+    ├── getSignData() → MiuiFidSigner.signWithDeviceCredential()
+    ├── getHMacSign() → HMAC-SHA1 (硬编码密钥)
+    ├── getCookie() → serviceToken + cUserId
+    └── syncPost() → POST /v1/unlock/applyBind
+```
+
+### 设备黑名单
+
+小米对特定设备做了**硬编码封锁**，即使通过了所有绑定检查也无法 Root：
+
+| 设备代号 | 型号 | 封锁方式 |
+|----------|------|----------|
+| sunstone | Redmi Note 12 | `NotSupportRootActivity` |
+| moonstone | Redmi Note 12 Pro | `NotSupportRootActivity` |
+
+条件：`ro.product.first_api_level > 30` 或设备代号在黑名单中。
+仅对中国稳定版生效，国际版和开发版不受影响。
 
 ---
 
