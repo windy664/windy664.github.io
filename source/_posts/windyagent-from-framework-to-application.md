@@ -7,7 +7,7 @@ categories: [AI 应用]
 
 过去几个月，我写了不少 WindyAgent 的文章：ReAct、Plan-Execute、跨服总线、工具安全闸、长期记忆、Skill、上下文压缩……每解决一个问题，就给自己的 Agent 补一个模块。代码确实越写越多，我却越来越不确定：**我到底在做 Minecraft 服务器运维应用，还是在维护一套通用 Agent 框架？**
 
-最近做另一个项目 [Torine](https://github.com/windy664/Torine-hackathon-agent-ts) 时，这个问题变得很具体。Torine 用现成的 OpenCode 执行编码任务，我写的是任务适配、约束和验收。回头看 WindyAgent，我开始认真考虑：既然 Java 生态里已经有 Agent Harness，为什么还要从工具调用循环开始自己造？
+参加智能体软件工厂比赛时，这个问题变得很具体。我在[参赛方案](https://github.com/windy664/Torine-hackathon-agent-ts)中用现成的 OpenCode 执行编码任务，自己写任务适配、约束和验收。回头看 WindyAgent，我开始认真考虑：既然 Java 生态里已经有 Agent Harness，为什么还要从工具调用循环开始自己造？
 
 <!-- more -->
 
@@ -19,9 +19,9 @@ WindyAgent 最初的目标很清楚：让服主用自然语言查看服务器状
 
 这不是改掉一个缓存 bug 就能结束的事。审批要能在等待时保存状态，恢复后不能重复执行；同一会话并发请求不能互相覆盖历史；一次工具调用超时，后台任务也得真正停止。每项都需要设计、测试和持续维护。我以前写过[「从 Hermes Agent 偷了 10 个设计」](https://windy664.github.io/2026/06/18/stealing-from-hermes-agent/)；现在意识到，把十个设计分别移植过来，也意味着我要负责它们组合起来之后的行为。
 
-## Torine 给我的提醒：把精力放在应用的独特部分
+## 智能体软件工厂比赛给我的启发
 
-Torine 没有重新实现一个编码 Agent。它把 [OpenCode](https://github.com/anomalyco/opencode) 当执行引擎，自己处理比赛任务的拆分、输入输出契约、检查和反馈。这种分工让我能直接围绕题目改应用逻辑，而不是先解决模型消息、工具协议和会话恢复。
+这次参赛没有重新实现一个编码 Agent。我把 [OpenCode](https://github.com/anomalyco/opencode) 当执行引擎，自己处理比赛任务的拆分、输入输出契约、检查和反馈。这种分工让我能直接围绕题目改应用逻辑，而不是先解决模型消息、工具协议和会话恢复。
 
 Minecraft 运维也有自己的独特问题：Velocity 只看得到代理层，世界和物品数据在 Bukkit/Paper 子服；同一个「在线人数」可能来自不同节点；踢人、执行命令、修改世界都有不同的授权边界。**这些问题，通用 Harness 不会替我决定。** 我应该把时间花在工具的语义、跨服通信、权限映射和可验证的执行结果上。
 
