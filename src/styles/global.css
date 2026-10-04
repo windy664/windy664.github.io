@@ -79,6 +79,9 @@ img { max-width: 100%; }
 .eyebrow-line { width: 24px; height: 1px; background: currentColor; }
 .hero h1 { margin: 22px 0 23px; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: clamp(2.5rem, 5vw, 4.55rem); line-height: 1.34; letter-spacing: -.055em; font-weight: 700; }
 .hero h1 em { color: var(--accent); font-style: normal; }
+.hero-source { margin: -8px 0 21px; color: var(--muted); font-size: .8rem; letter-spacing: .04em; }
+.hero-source a { margin-left: 5px; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--muted) 38%, transparent); text-underline-offset: 4px; }
+.hero-source a:hover { color: var(--accent); text-decoration-color: var(--accent); }
 .hero-copy > p { max-width: 530px; color: var(--muted); font-size: 1.03rem; line-height: 1.95; margin: 0; }
 .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 31px; }
 .button { display: inline-flex; align-items: center; justify-content: center; gap: 24px; min-height: 46px; padding: 0 19px; border: 1px solid var(--line); border-radius: 9px; font-size: .88rem; font-weight: 700; transition: transform .2s, background .2s, border-color .2s; }
