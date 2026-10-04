@@ -39,10 +39,17 @@
 html { scroll-behavior: smooth; background: var(--bg); }
 body { margin: 0; background: transparent; color: var(--ink); -webkit-font-smoothing: antialiased; }
 body > main, body > footer { position: relative; z-index: 1; }
-.scene-backdrop { position: fixed; inset: 0; z-index: 0; width: 100%; height: 100vh; height: 100dvh; overflow: hidden; pointer-events: none; }
-.scene-backdrop svg { display: block; width: 100%; height: 100%; }
-.scene-backdrop::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(248,247,243,.07), rgba(248,247,243,.11) 55%, rgba(248,247,243,.03)); }
-:root[data-theme='dark'] .scene-backdrop::after { background: linear-gradient(180deg, rgba(10,22,30,.08), rgba(10,22,30,.11) 55%, rgba(10,22,30,.02)); }
+.scene-backdrop { position: fixed; inset: 0; z-index: 0; width: 100%; height: 100vh; height: 100dvh; overflow: hidden; pointer-events: none; background: #779197; }
+.scene-photo { position: absolute; inset: -3%; background-size: cover; background-position: center; animation: scene-glide 36s ease-in-out infinite alternate; will-change: transform; }
+.scene-photo-day { background-image: url('/scenery/alpine-lake-day.webp'); }
+.scene-photo-dusk { background-image: url('/scenery/alpine-lake-dusk.webp'); opacity: 0; transition: opacity 1.2s ease; }
+:root[data-theme='dark'] .scene-photo-dusk { opacity: 1; }
+.scene-mist { position: absolute; left: -25%; right: -25%; top: 47%; height: 24%; background: radial-gradient(ellipse at center, rgba(255,255,255,.2), transparent 65%); filter: blur(30px); opacity: .28; animation: mist-drift 28s ease-in-out infinite alternate; }
+:root[data-theme='dark'] .scene-mist { opacity: .13; }
+.scene-backdrop::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(248,247,243,.02), rgba(248,247,243,.08) 55%, rgba(248,247,243,.02)); }
+:root[data-theme='dark'] .scene-backdrop::after { background: linear-gradient(180deg, rgba(10,22,30,.03), rgba(10,22,30,.1) 55%, rgba(10,22,30,.03)); }
+@keyframes scene-glide { from { transform: scale(1.04) translate3d(-.4%, 0, 0); } to { transform: scale(1.1) translate3d(.4%, -.8%, 0); } }
+@keyframes mist-drift { from { transform: translateX(-5%); } to { transform: translateX(5%); } }
 a { color: inherit; text-decoration: none; }
 button, input { font: inherit; }
 button { cursor: pointer; }
@@ -83,45 +90,6 @@ img { max-width: 100%; }
 .hero-stat { display: flex; align-items: baseline; gap: 12px; margin-top: 50px; padding-top: 19px; border-top: 1px solid var(--line); max-width: 275px; }
 .hero-stat strong { font-size: 1.75rem; font-weight: 600; letter-spacing: -.06em; }
 .hero-stat span { color: var(--muted); font-size: .85rem; }
-.sky-top { stop-color: #7fa9aa; }
-.sky-bottom { stop-color: #e5d2b6; }
-.water-top { stop-color: #739e9d; }
-.water-bottom { stop-color: #315d63; }
-.sun-halo { fill: #f6ddaf; opacity: .22; transform-origin: 1120px 238px; animation: sun-breathe 9s ease-in-out infinite; }
-.sun { fill: #f8d9a2; animation: sun-float 12s ease-in-out infinite alternate; }
-.cloud { fill: #fff2d7; opacity: .28; animation: cloud-drift 24s ease-in-out infinite alternate; }
-.cloud-two { opacity: .19; animation-duration: 31s; animation-direction: alternate-reverse; }
-.cloud-three { opacity: .16; animation-duration: 37s; }
-.mountain-back { fill: #a7b6aa; }
-.mountain-mid { fill: #728f89; }
-.mountain-front { fill: #476e6d; }
-.shore { fill: #325e60; }
-.near-shore { fill: #294c4f; }
-.water-lines { fill: none; stroke: #e1d9b8; stroke-width: 3; stroke-linecap: round; opacity: .46; animation: water-shift 6s ease-in-out infinite alternate; }
-.grass { fill: none; stroke: #d5c89c; stroke-width: 4; stroke-linecap: round; transform-origin: bottom; animation: grass-sway 5s ease-in-out infinite alternate; }
-.grass-right { animation-delay: -2.5s; }
-.birds { fill: none; stroke: #315f65; stroke-width: 3; stroke-linecap: round; opacity: .7; }
-:root[data-theme='dark'] .sky-top { stop-color: #1b334b; }
-:root[data-theme='dark'] .sky-bottom { stop-color: #6b6a75; }
-:root[data-theme='dark'] .water-top { stop-color: #3b6675; }
-:root[data-theme='dark'] .water-bottom { stop-color: #1b394d; }
-:root[data-theme='dark'] .sun-halo { fill: #c3d8e7; opacity: .14; }
-:root[data-theme='dark'] .sun { fill: #e5e8df; }
-:root[data-theme='dark'] .cloud { fill: #b6cbd2; opacity: .15; }
-:root[data-theme='dark'] .mountain-back { fill: #697b82; }
-:root[data-theme='dark'] .mountain-mid { fill: #4b6671; }
-:root[data-theme='dark'] .mountain-front { fill: #345666; }
-:root[data-theme='dark'] .shore { fill: #2c5360; }
-:root[data-theme='dark'] .near-shore { fill: #203e4e; }
-:root[data-theme='dark'] .water-lines { stroke: #b8d3d8; opacity: .3; }
-:root[data-theme='dark'] .grass { stroke: #8ca9a0; }
-:root[data-theme='dark'] .birds { stroke: #a9c8d0; }
-@keyframes sun-breathe { 50% { transform: scale(1.13); opacity: .34; } }
-@keyframes sun-float { to { transform: translateY(8px); } }
-@keyframes cloud-drift { to { transform: translateX(72px); } }
-@keyframes water-shift { to { transform: translateX(22px); opacity: .65; } }
-@keyframes grass-sway { to { transform: rotate(4deg); } }
-
 main > .shell:not(.hero):not(.divider) { padding-inline: clamp(20px, 3.4vw, 42px); border: 1px solid var(--sheet-line); border-radius: 18px; background: var(--sheet); backdrop-filter: blur(18px); box-shadow: var(--shadow); }
 .divider { padding: 14px 18px; border-top: 1px solid var(--sheet-line); border-radius: 9px; background: var(--sheet); backdrop-filter: blur(12px); }
 .home-section { margin-top: 28px; padding-top: 37px; padding-bottom: 38px; }
@@ -335,4 +303,6 @@ main > .shell:not(.hero):not(.divider) { padding-inline: clamp(20px, 3.4vw, 42px
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+  .scene-photo { animation: none; transform: none; }
+  .scene-mist { display: none; }
 }
