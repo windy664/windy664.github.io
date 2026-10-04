@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import SceneBackdrop from '../components/SceneBackdrop.astro';
 
 interface Props {
   title?: string;
@@ -47,6 +48,7 @@ const nav = [
     </script>
   </head>
   <body>
+    <SceneBackdrop />
     <header class="site-header">
       <div class="shell header-inner">
         <a class="brand" href="/" aria-label="Torine 的博客首页"><span class="brand-mark">T</span><span>Torine<span class="brand-dot">.</span></span></a>
