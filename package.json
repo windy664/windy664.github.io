@@ -1,5 +1,5 @@
 {
-  "name": "windy664-blog",
+  "name": "torine-blog",
   "version": "2.0.0",
   "private": true,
   "type": "module",
@@ -13,8 +13,8 @@
     "post:publish": "node scripts/posts.mjs publish"
   },
   "dependencies": {
-    "astro": "^7.3.5",
-    "@astrojs/sitemap": "^3.7.4"
+    "@astrojs/sitemap": "^3.7.4",
+    "astro": "^7.3.5"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.7",

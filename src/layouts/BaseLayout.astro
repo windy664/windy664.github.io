@@ -9,7 +9,7 @@ interface Props {
   article?: boolean;
 }
 const {
-  title = '风吟的博客',
+  title = 'Torine 的博客',
   description = '记录 Minecraft 服务端、Agent 工程和实际项目里的得失。',
   current = '',
   noIndex = false,
@@ -38,10 +38,10 @@ const nav = [
     <meta property="og:url" content={canonical} />
     {noIndex && <meta name="robots" content="noindex" />}
     <link rel="canonical" href={canonical} />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <link rel="alternate" type="application/rss+xml" title="风吟的博客" href="/rss.xml" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate" type="application/rss+xml" title="Torine 的博客" href="/rss.xml" />
     <link rel="sitemap" href="/sitemap-index.xml" />
-    <title>{title === '风吟的博客' ? title : `${title} · 风吟的博客`}</title>
+    <title>{title === 'Torine 的博客' ? title : `${title} · Torine 的博客`}</title>
     <script is:inline>
       try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch {}
     </script>
@@ -49,7 +49,7 @@ const nav = [
   <body>
     <header class="site-header">
       <div class="shell header-inner">
-        <a class="brand" href="/" aria-label="风吟的博客首页"><span class="brand-mark">风</span><span>风吟<span class="brand-dot">.</span></span></a>
+        <a class="brand" href="/" aria-label="Torine 的博客首页"><span class="brand-mark">T</span><span>Torine<span class="brand-dot">.</span></span></a>
         <nav class="main-nav" aria-label="主导航">
           {nav.map((item) => <a href={item.href} aria-current={current === item.href ? 'page' : undefined}>{item.label}</a>)}
         </nav>
@@ -62,7 +62,7 @@ const nav = [
     <main id="main"><slot /></main>
     <footer class="site-footer">
       <div class="shell footer-inner">
-        <p>风吟的博客 <span aria-hidden="true">·</span> 写清楚做过的事，也记下改变想法的时刻。</p>
+        <p>Torine 的博客 <span aria-hidden="true">·</span> 写清楚做过的事，也记下改变想法的时刻。</p>
         <div><a href="/rss.xml">RSS</a><a href="https://github.com/windy664" target="_blank" rel="noopener noreferrer">GitHub ↗</a><a href="#main">回到顶部 ↑</a></div>
       </div>
     </footer>

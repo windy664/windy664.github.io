@@ -3,4 +3,4 @@ interface Props { target: string }
 const { target } = Astro.props;
 const absolute = new URL(target, Astro.site).toString();
 ---
-<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8" /><meta name="robots" content="noindex" /><meta http-equiv="refresh" content={`0;url=${target}`} /><link rel="canonical" href={absolute} /><title>页面已移动 · 风吟的博客</title></head><body><p>页面已移动。<a href={target}>点击前往新地址</a>。</p></body></html>
+<!doctype html><html lang="zh-CN"><head><meta charset="UTF-8" /><meta name="robots" content="noindex" /><meta http-equiv="refresh" content={`0;url=${target}`} /><link rel="canonical" href={absolute} /><title>页面已移动 · Torine 的博客</title></head><body><p>页面已移动。<a href={target}>点击前往新地址</a>。</p></body></html>
