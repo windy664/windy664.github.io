@@ -44,7 +44,7 @@ export function readingMinutes(post: Post): number {
 }
 
 export async function allPosts(): Promise<Post[]> {
-  return (await getCollection('posts')).sort((a, b) =>
+  return (await getCollection('posts', ({ data }) => !data.draft)).sort((a, b) =>
     (b.data.date instanceof Date ? b.data.date.toISOString() : String(b.data.date))
       .localeCompare(a.data.date instanceof Date ? a.data.date.toISOString() : String(a.data.date)) || a.id.localeCompare(b.id)
   );

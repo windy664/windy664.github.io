@@ -7,7 +7,10 @@
     "dev": "astro dev",
     "build": "astro build && pagefind --site dist && node scripts/check-output.mjs",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check",
+    "post:new": "node scripts/posts.mjs new",
+    "post:list": "node scripts/posts.mjs list",
+    "post:publish": "node scripts/posts.mjs publish"
   },
   "dependencies": {
     "astro": "^7.3.5",

@@ -29,6 +29,8 @@ for (const file of htmlFiles) {
 const postFiles = readdirSync('source/_posts').filter((name) => name.endsWith('.md'));
 for (const file of postFiles) {
   const body = readFileSync(join('source/_posts', file), 'utf8');
+  const frontmatter = body.match(/^---\s*\n([\s\S]*?)\n---/);
+  if (frontmatter && /^draft:\s*true\s*$/m.test(frontmatter[1])) continue;
   const date = body.match(/^date:\s*(\d{4})-(\d{2})-(\d{2})/m);
   if (!date) { errors.push(`${file}: date is missing or invalid`); continue; }
   const expected = join(root, date[1], date[2], date[3], basename(file, '.md'), 'index.html');
@@ -51,4 +53,4 @@ if (errors.length) {
   console.error(`\nBuild verification found ${errors.length} issue(s):\n${errors.slice(0, 50).join('\n')}`);
   process.exit(1);
 }
-console.log(`Verified ${postFiles.length} article permalinks, ${oldRoutes.length} old routes and ${htmlFiles.length} HTML pages.`);
+console.log(`Verified published article permalinks, ${oldRoutes.length} old routes and ${htmlFiles.length} HTML pages.`);
