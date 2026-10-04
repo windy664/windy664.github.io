@@ -1,0 +1,10 @@
+---
+import Redirect from '../../../../../layouts/Redirect.astro';
+import { categoryUrl } from '../../../../../lib/posts';
+
+export function getStaticPaths() {
+  return [{ params: { category: 'AI-应用', page: '2' }, props: { target: categoryUrl('AI 应用') } }];
+}
+const { target } = Astro.props;
+---
+<Redirect target={target} />

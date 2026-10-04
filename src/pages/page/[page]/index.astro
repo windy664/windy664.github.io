@@ -1,0 +1,16 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PostCard from '../../../components/PostCard.astro';
+import { allPosts } from '../../../lib/posts';
+
+export async function getStaticPaths() {
+  const posts = await allPosts();
+  const pages = Math.ceil(posts.length / 10);
+  return Array.from({ length: Math.max(0, pages - 1) }, (_, i) => ({ params: { page: String(i + 2) }, props: { page: i + 2, posts: posts.slice((i + 1) * 10, (i + 2) * 10), pages } }));
+}
+const { page, posts, pages } = Astro.props;
+---
+<BaseLayout title={`文章列表 · 第 ${page} 页`} noIndex>
+  <section class="page-head shell"><span class="eyebrow"><span class="eyebrow-line"></span> ALL POSTS</span><h1>文章列表</h1><p>旧首页分页继续保留。完整目录请看归档页。</p></section>
+  <section class="shell page-content"><div class="post-grid">{posts.map((post) => <PostCard post={post} />)}</div><nav class="pagination"><a href={page === 2 ? '/' : `/page/${page - 1}/`}>← 上一页</a><span>{page} / {pages}</span>{page < pages && <a href={`/page/${page + 1}/`}>下一页 →</a>}</nav></section>
+</BaseLayout>

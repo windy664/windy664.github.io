@@ -1,0 +1,45 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostCard from '../components/PostCard.astro';
+import { allPosts, categories, categoryUrl, postUrl } from '../lib/posts';
+
+const posts = await allPosts();
+const featured = posts.find((post) => post.id.includes('windyagent-from-framework-to-application')) || posts[0];
+const recent = posts.filter((post) => post.id !== featured.id).slice(0, 8);
+const mainCategories = categories(posts).slice(0, 5);
+---
+<BaseLayout current="/">
+  <section class="hero shell">
+    <div class="hero-copy">
+      <span class="eyebrow"><span class="eyebrow-line"></span> 一个人的技术记录</span>
+      <h1>把做过的事，<br /><em>想明白再写下来。</em></h1>
+      <p>关于 Minecraft 服务端、Agent 工程，以及那些做着做着改变了想法的项目。这里保留方案，也保留复盘。</p>
+      <div class="hero-actions"><a class="button button-primary" href="/topics/">从专题开始 <span>↗</span></a><a class="button button-secondary" href="/archives/">浏览全部文章 <span>→</span></a></div>
+    <div class="hero-stat"><strong>{posts.length}</strong><span>篇文章，仍在继续记录</span></div>
+    </div>
+    <div class="hero-visual" aria-hidden="true">
+      <div class="visual-frame"><span class="visual-overline">FIELD NOTES / 001—∞</span><span class="visual-glyph">风</span><span class="visual-vertical">观察 · 构建 · 复盘</span><span class="visual-bottom">WINDY'S JOURNAL <span>↗</span></span></div>
+    </div>
+  </section>
+
+  <div class="divider shell"><span>近期记录</span><span>2026 / 持续更新</span></div>
+  <section class="home-section shell">
+    <div class="section-heading"><div><span class="section-index">01 / FEATURED</span><h2>最近在想</h2></div><a href={postUrl(featured)} class="section-more">打开文章 ↗</a></div>
+    <PostCard post={featured} featured />
+  </section>
+
+  <section class="home-section shell">
+    <div class="section-heading"><div><span class="section-index">02 / LATEST</span><h2>最新文章</h2></div><a href="/archives/" class="section-more">全部文章 ↗</a></div>
+    <div class="post-grid">{recent.map((post) => <PostCard post={post} />)}</div>
+  </section>
+
+  <section class="home-section shell explore-section">
+    <div class="section-heading"><div><span class="section-index">03 / EXPLORE</span><h2>按主题探索</h2></div><a href="/topics/" class="section-more">阅读路线 ↗</a></div>
+    <div class="topic-teasers">
+      <a href="/topics/#windyagent"><span>01 / LONG RUNNING</span><h3>WindyAgent</h3><p>从功能设计、踩坑，到重新思考 Agent 的边界。</p><b>阅读专题 →</b></a>
+      <a href="/topics/#engineering"><span>02 / BUILDING</span><h3>工程与服务端</h3><p>Velocity、JVM、跨服通信和真实环境中的问题。</p><b>阅读专题 →</b></a>
+      <a href="/topics/#exploration"><span>03 / EXPLORING</span><h3>其他探索</h3><p>比赛、逆向和项目复盘，记录走过的弯路。</p><b>阅读专题 →</b></a>
+    </div>
+    <div class="category-strip"><span>或按分类阅读</span>{mainCategories.map((item) => <a href={categoryUrl(item.name)}>{item.name}<small>{item.count}</small></a>)}</div>
+  </section>
+</BaseLayout>

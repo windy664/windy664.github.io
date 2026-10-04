@@ -1,0 +1,28 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+<BaseLayout title="搜索文章" current="/search/" noIndex>
+  <section class="page-head shell"><span class="eyebrow"><span class="eyebrow-line"></span> SEARCH</span><h1>搜索文章</h1><p>输入标题、技术名词或想找的问题。搜索在浏览器内完成。</p></section>
+  <section class="shell search-page"><label for="search-input">搜索关键词</label><div class="search-field"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="例如：Velocity、Agent、类加载" autocomplete="off" autofocus /><kbd>/</kbd></div><p id="search-status" role="status">输入关键词开始搜索。</p><div id="search-results" class="search-results"></div></section>
+  <script is:inline type="module">
+    const input = document.querySelector('#search-input');
+    const status = document.querySelector('#search-status');
+    const container = document.querySelector('#search-results');
+    const esc = (value) => String(value).replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    let timer;
+    async function run() {
+      const query = input.value.trim();
+      if (!query) { status.textContent = '输入关键词开始搜索。'; container.innerHTML = ''; return; }
+      status.textContent = '正在搜索…';
+      try {
+        const pagefind = await import('/pagefind/pagefind.js');
+        const result = await pagefind.search(query);
+        const items = await Promise.all(result.results.slice(0, 30).map((item) => item.data()));
+        status.textContent = `找到 ${result.results.length} 条结果${result.results.length > 30 ? '，显示前 30 条' : ''}。`;
+        container.innerHTML = items.map((item) => `<a class="search-result" href="${esc(item.url)}"><strong>${esc(item.meta.title)}</strong><p>${esc(item.plain_excerpt || '')}</p><span>阅读文章 ↗</span></a>`).join('');
+      } catch { status.textContent = '搜索索引暂时不可用，请稍后重试。'; }
+    }
+    input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 180); });
+    document.addEventListener('keydown', (event) => { if (event.key === '/' && document.activeElement !== input) { event.preventDefault(); input.focus(); } });
+  </script>
+</BaseLayout>

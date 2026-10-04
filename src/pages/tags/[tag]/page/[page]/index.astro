@@ -1,0 +1,11 @@
+---
+import Redirect from '../../../../../layouts/Redirect.astro';
+import { tagUrl } from '../../../../../lib/posts';
+
+export function getStaticPaths() {
+  return [{ tag: 'Agent', page: '2' }, { tag: 'Agent', page: '3' }, { tag: 'LLM', page: '2' }, { tag: 'Minecraft', page: '2' }]
+    .map(({ tag, page }) => ({ params: { tag, page }, props: { target: tagUrl(tag) } }));
+}
+const { target } = Astro.props;
+---
+<Redirect target={target} />

@@ -1,0 +1,18 @@
+---
+import type { Post } from '../lib/posts';
+import { categoryUrl, dateText, excerpt, postUrl, readingMinutes } from '../lib/posts';
+
+interface Props { post: Post; featured?: boolean }
+const { post, featured = false } = Astro.props;
+const category = post.data.categories[0];
+---
+<article class:list={['post-card', { featured }]}>
+  <div class="post-card__eyebrow">
+    {category && <a class="pill" href={categoryUrl(category)}>{category}</a>}
+    <time datetime={dateText(post)}>{dateText(post)}</time>
+    <span class="read-time">{readingMinutes(post)} 分钟阅读</span>
+  </div>
+  <h2><a href={postUrl(post)}>{post.data.title}</a></h2>
+  <p>{excerpt(post, featured ? 180 : 125)}{excerpt(post, featured ? 180 : 125).length >= (featured ? 180 : 125) ? '…' : ''}</p>
+  <a class="text-link" href={postUrl(post)} aria-label={`阅读：${post.data.title}`}>阅读文章 <span aria-hidden="true">↗</span></a>
+</article>

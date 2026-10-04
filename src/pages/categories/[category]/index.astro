@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PostCard from '../../../components/PostCard.astro';
+import { allPosts, categories, termSlug } from '../../../lib/posts';
+
+export async function getStaticPaths() {
+  const posts = await allPosts();
+  return categories(posts).map((group) => ({ params: { category: termSlug(group.name) }, props: { group, posts: posts.filter((post) => post.data.categories.some((category) => category === group.name)) } }));
+}
+const { group, posts } = Astro.props;
+---
+<BaseLayout title={`${group.name} · 文章分类`}>
+  <section class="page-head shell"><span class="eyebrow"><span class="eyebrow-line"></span> CATEGORY / {group.count} POSTS</span><h1>{group.name}</h1><p>这个分类下的全部文章，按发布时间排列。</p><div class="page-head-links"><a href="/categories/">← 返回分类</a></div></section>
+  <section class="shell page-content"><div class="post-grid">{posts.map((post) => <PostCard post={post} />)}</div></section>
+</BaseLayout>

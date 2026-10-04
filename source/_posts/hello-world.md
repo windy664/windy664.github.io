@@ -2,6 +2,7 @@
 title: Hello World
 date: 2026-06-11
 tags: [折腾, 博客]
+categories: [思考]
 ---
 
 博客搭好了，开始记录折腾历程。
@@ -10,7 +11,7 @@ tags: [折腾, 博客]
 
 ## 关于这个博客
 
-用 [Hexo](https://hexo.io) + [Fluid](https://github.com/fluid-dev/hexo-theme-fluid) 搭建，托管在 GitHub Pages，全程免费。
+博客最初用 [Hexo](https://hexo.io) + [Fluid](https://github.com/fluid-dev/hexo-theme-fluid) 搭建，托管在 GitHub Pages。2026-10-04 迁到 Astro，文章仍在 `source/_posts/` 写作，推送后自动部署。
 
 ## 写文章的方式
 

@@ -1,0 +1,10 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { allPosts, categories, categoryUrl } from '../../lib/posts';
+const posts = await allPosts();
+const groups = categories(posts);
+---
+<BaseLayout title="文章分类" current="/categories/">
+  <section class="page-head shell"><span class="eyebrow"><span class="eyebrow-line"></span> CATEGORIES</span><h1>按分类阅读</h1><p>分类保留文章原有归属；专题页则按阅读顺序整理文章。</p><div class="page-head-links"><a href="/topics/">查看专题 ↗</a><a href="/tags/">查看标签 ↗</a></div></section>
+  <section class="shell page-content"><div class="category-grid">{groups.map((group, index) => <a class="category-card" href={categoryUrl(group.name)}><span>{String(index + 1).padStart(2, '0')} / CATEGORY</span><h2>{group.name}</h2><p>{group.count} 篇文章</p><b aria-hidden="true">↗</b></a>)}</div></section>
+</BaseLayout>

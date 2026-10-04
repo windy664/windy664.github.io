@@ -1,0 +1,32 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../../../../layouts/BaseLayout.astro';
+import { allPosts, categoryUrl, dateText, excerpt, postUrl, readingMinutes, tagUrl } from '../../../../../lib/posts';
+
+export async function getStaticPaths() {
+  const posts = await allPosts();
+  return posts.map((post, index) => {
+    const [, year, month, day, slug] = postUrl(post).split('/');
+    return { params: { year, month, day, slug }, props: { post, previous: posts[index + 1], next: posts[index - 1] } };
+  });
+}
+const { post, previous, next } = Astro.props;
+const { Content, headings } = await render(post);
+const category = post.data.categories[0];
+---
+<BaseLayout title={post.data.title} description={post.data.description || excerpt(post, 155)} article>
+  <div class="article-shell shell">
+    <article class="article">
+      <header class="article-header">
+        <div class="article-crumbs"><a href="/">首页</a><span>/</span><a href="/archives/">文章</a>{category && <><span>/</span><a href={categoryUrl(category)}>{category}</a></>}</div>
+        <h1>{post.data.title}</h1>
+        <div class="article-meta"><time datetime={dateText(post)}>{dateText(post)}</time><span>·</span><span>{readingMinutes(post)} 分钟阅读</span>{category && <><span>·</span><a href={categoryUrl(category)}>{category}</a></>}</div>
+      </header>
+      <div class="article-body prose" data-pagefind-body><Content /></div>
+      {post.data.tags.length > 0 && <div class="article-tags"><span>标签</span>{post.data.tags.map((tag) => <a href={tagUrl(tag)}>#{tag}</a>)}</div>}
+      <div class="article-end"><span>— 完 —</span><p>如果这篇文章对你有用，也许可以看看前后写下的思考。</p></div>
+      <nav class="post-navigation" aria-label="相邻文章"><div>{previous && <a href={postUrl(previous)}><small>← 上一篇</small><strong>{previous.data.title}</strong></a>}</div><div>{next && <a href={postUrl(next)}><small>下一篇 →</small><strong>{next.data.title}</strong></a>}</div></nav>
+    </article>
+    {headings.filter((heading) => heading.depth === 2 || heading.depth === 3).length > 1 && <aside class="toc"><span>本文目录</span><nav aria-label="本文目录">{headings.filter((heading) => heading.depth === 2 || heading.depth === 3).map((heading) => <a class:list={[`depth-${heading.depth}`]} href={`#${heading.slug}`}>{heading.text}</a>)}</nav></aside>}
+  </div>
+</BaseLayout>

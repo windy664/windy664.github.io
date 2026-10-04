@@ -1,0 +1,86 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+  current?: string;
+  noIndex?: boolean;
+  article?: boolean;
+}
+const {
+  title = '风吟的博客',
+  description = '记录 Minecraft 服务端、Agent 工程和实际项目里的得失。',
+  current = '',
+  noIndex = false,
+  article = false,
+} = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site).toString();
+const nav = [
+  { label: '首页', href: '/' },
+  { label: '文章', href: '/archives/' },
+  { label: '专题', href: '/topics/' },
+  { label: '分类', href: '/categories/' },
+  { label: '搜索', href: '/search/' },
+  { label: '关于', href: '/about/' },
+];
+---
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f7f4ed" />
+    <meta name="description" content={description} />
+    <meta property="og:type" content={article ? 'article' : 'website'} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    {noIndex && <meta name="robots" content="noindex" />}
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="alternate" type="application/rss+xml" title="风吟的博客" href="/rss.xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <title>{title === '风吟的博客' ? title : `${title} · 风吟的博客`}</title>
+    <script is:inline>
+      try { document.documentElement.dataset.theme = localStorage.getItem('blog-theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch {}
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="shell header-inner">
+        <a class="brand" href="/" aria-label="风吟的博客首页"><span class="brand-mark">风</span><span>风吟<span class="brand-dot">.</span></span></a>
+        <nav class="main-nav" aria-label="主导航">
+          {nav.map((item) => <a href={item.href} aria-current={current === item.href ? 'page' : undefined}>{item.label}</a>)}
+        </nav>
+        <div class="header-actions">
+          <button class="theme-button" type="button" aria-label="切换明暗主题" title="切换明暗主题"><span class="theme-icon" aria-hidden="true">◐</span></button>
+          <button class="menu-button" type="button" aria-label="打开导航" aria-expanded="false"><span></span><span></span><span></span></button>
+        </div>
+      </div>
+    </header>
+    <main id="main"><slot /></main>
+    <footer class="site-footer">
+      <div class="shell footer-inner">
+        <p>风吟的博客 <span aria-hidden="true">·</span> 写清楚做过的事，也记下改变想法的时刻。</p>
+        <div><a href="/rss.xml">RSS</a><a href="https://github.com/windy664" target="_blank" rel="noopener noreferrer">GitHub ↗</a><a href="#main">回到顶部 ↑</a></div>
+      </div>
+    </footer>
+    <script>
+      const menu = document.querySelector<HTMLButtonElement>('.menu-button');
+      const nav = document.querySelector<HTMLElement>('.main-nav');
+      menu?.addEventListener('click', () => {
+        const open = menu.getAttribute('aria-expanded') !== 'true';
+        menu.setAttribute('aria-expanded', String(open));
+        menu.setAttribute('aria-label', open ? '关闭导航' : '打开导航');
+        nav?.classList.toggle('is-open', open);
+      });
+      const theme = document.querySelector<HTMLButtonElement>('.theme-button');
+      theme?.addEventListener('click', () => {
+        const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        localStorage.setItem('blog-theme', next);
+      });
+    </script>
+  </body>
+</html>
