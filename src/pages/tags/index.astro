@@ -5,6 +5,6 @@ const posts = await allPosts();
 const list = tags(posts);
 ---
 <BaseLayout title="文章标签">
-  <section class="page-head shell"><span class="eyebrow"><span class="eyebrow-line"></span> TAGS / {list.length} TERMS</span><h1>文章标签</h1><p>常用标签放在前面。若想按一条线读下去，可以从专题页开始。</p><div class="page-head-links"><a href="/topics/">查看专题 ↗</a></div></section>
+  <section class="page-head shell"><span class="eyebrow"><span class="eyebrow-line"></span> TAGS / {list.length} TERMS</span><h1>文章标签</h1><p>从一个词出发，找回与它有关的文章。常见线索在前，所有标签都收在下方。</p><div class="page-head-links"><a href="/topics/">查看专题 ↗</a></div></section>
   <section class="shell page-content tag-page"><h2>常用标签</h2><div class="tag-list">{list.filter((item) => item.count > 1).map((item) => <a href={tagUrl(item.name)}>{item.name}<small>{item.count}</small></a>)}</div><details><summary>查看全部标签（{list.length}）</summary><div class="tag-list tag-list-small">{list.map((item) => <a href={tagUrl(item.name)}>{item.name}<small>{item.count}</small></a>)}</div></details></section>
 </BaseLayout>

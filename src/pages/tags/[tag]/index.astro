@@ -10,6 +10,6 @@ export async function getStaticPaths() {
 const { tag, posts } = Astro.props;
 ---
 <BaseLayout title={`#${tag.name} · 文章标签`}>
-  <section class="page-head shell"><span class="eyebrow"><span class="eyebrow-line"></span> TAG / {tag.count} POSTS</span><h1>#{tag.name}</h1><p>标记了这个标签的文章。</p><div class="page-head-links"><a href="/tags/">← 返回标签</a></div></section>
+  <section class="page-head shell"><span class="eyebrow"><span class="eyebrow-line"></span> TAG / {tag.count} POSTS</span><h1>#{tag.name}</h1><p>沿着这个词，看看它曾在哪些文章里出现。</p><div class="page-head-links"><a href="/tags/">← 返回标签</a></div></section>
   <section class="shell page-content"><div class="post-grid">{posts.map((post) => <PostCard post={post} />)}</div></section>
 </BaseLayout>

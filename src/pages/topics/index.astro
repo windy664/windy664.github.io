@@ -5,23 +5,23 @@ const posts = await allPosts();
 const byId = (ids: string[]) => ids.map((id) => posts.find((post) => post.id === id)).filter((post) => post !== undefined);
 const tracks = [
   {
-    id: 'windyagent', number: '01', title: 'WindyAgent', subtitle: '从做出功能，到重新选择底座',
-    intro: '按这条路线读，可以看到一个 Minecraft Agent 如何长出工具、记忆和护栏，最后又反思通用运行时的边界。',
+    id: 'windyagent', number: '01', title: 'WindyAgent', subtitle: '从功能生长，到追问边界',
+    intro: '沿着这些文章，可以看到工具、记忆和护栏如何逐渐成形，也看到关于通用运行时的新疑问。',
     posts: byId(['llm-vs-deterministic', 'guardrails-for-acting-agent', 'stealing-from-hermes-agent', 'agent-latency-fake-async', 'groovy-to-kether-migration', 'windyagent-from-framework-to-application']),
   },
   {
-    id: 'engineering', number: '02', title: '工程与服务端', subtitle: '系统运行起来之后的问题',
-    intro: '构建、类加载、跨服通信和线程约束。这些文章记录了在真实 Minecraft 服务端里遇到的坑。',
+    id: 'engineering', number: '02', title: '工程与服务端', subtitle: '让系统经得起真实运行',
+    intro: '构建、类加载、跨服通信和线程约束。问题总在系统真正运行时浮现，这里记下它们的来龙去脉。',
     posts: byId(['gradle-jvm-vs-toolchain', 'velocity-plugin-fatjar', 'jackson-classloader-conflict', 'hybrid-server-mainthread-and-scheduler', 'stale-online-capability-vs-liveness', 'why-not-mcp-per-subserver']),
   },
   {
-    id: 'exploration', number: '03', title: '其他探索', subtitle: '比赛、逆向与复盘',
-    intro: '离开日常项目的实验。目标不同，但同样重视验证、记录意外和承认判断的变化。',
+    id: 'exploration', number: '03', title: '其他探索', subtitle: '走出熟悉的工程现场',
+    intro: '比赛、逆向与复盘。换一条路走，仍然要验证、记下意外，也承认判断曾经改变。',
     posts: byId(['2026-09-26-reverse-engineering-gruangroun-xiaoer', '2026-09-26-xiaomi-hyperos-bl-unlock-failure', '2026-10-03-gosim-survey26-hackathon-prep-retro']),
   },
 ];
 ---
 <BaseLayout title="阅读专题" current="/topics/">
-  <section class="page-head shell"><span class="eyebrow"><span class="eyebrow-line"></span> READING PATHS</span><h1>从这里开始读</h1><p>时间线适合回看，专题适合顺着一个问题往下读。这里挑出几条有起点、有转折的路线。</p></section>
+  <section class="page-head shell"><span class="eyebrow"><span class="eyebrow-line"></span> READING PATHS</span><h1>从这里开始读</h1><p>从一篇到下一篇，沿着同一个问题的来路走。这里收着几条有起点、有转折，也仍在继续的阅读路径。</p></section>
   <section class="shell topics-page">{tracks.map((track) => <div class="topic-track" id={track.id}><div class="topic-track__intro"><span class="section-index">{track.number} / READING PATH</span><h2>{track.title}</h2><h3>{track.subtitle}</h3><p>{track.intro}</p></div><ol>{track.posts.map((post) => <li><a href={postUrl(post)}><span>{dateText(post)}</span><strong>{post.data.title}</strong><b aria-hidden="true">↗</b></a></li>)}</ol></div>)}<p class="topics-footnote">这些是推荐阅读路径；<a href="/archives/">归档页</a>保留全部文章。</p></section>
 </BaseLayout>

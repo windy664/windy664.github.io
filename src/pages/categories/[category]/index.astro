@@ -10,6 +10,6 @@ export async function getStaticPaths() {
 const { group, posts } = Astro.props;
 ---
 <BaseLayout title={`${group.name} · 文章分类`}>
-  <section class="page-head shell"><span class="eyebrow"><span class="eyebrow-line"></span> CATEGORY / {group.count} POSTS</span><h1>{group.name}</h1><p>这个分类下的全部文章，按发布时间排列。</p><div class="page-head-links"><a href="/categories/">← 返回分类</a></div></section>
+  <section class="page-head shell"><span class="eyebrow"><span class="eyebrow-line"></span> CATEGORY / {group.count} POSTS</span><h1>{group.name}</h1><p>同一类问题，也有不同的来路。这里按时间收好相关的文章。</p><div class="page-head-links"><a href="/categories/">← 返回分类</a></div></section>
   <section class="shell page-content"><div class="post-grid">{posts.map((post) => <PostCard post={post} />)}</div></section>
 </BaseLayout>

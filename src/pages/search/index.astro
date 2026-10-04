@@ -2,7 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 ---
 <BaseLayout title="搜索文章" current="/search/" noIndex>
-  <section class="page-head shell"><span class="eyebrow"><span class="eyebrow-line"></span> SEARCH</span><h1>搜索文章</h1><p>输入标题、技术名词或想找的问题。搜索在浏览器内完成。</p></section>
+  <section class="page-head shell"><span class="eyebrow"><span class="eyebrow-line"></span> SEARCH</span><h1>搜索文章</h1><p>记得一个词，就从这里找回那篇文章。可以输入标题、技术名词或问题关键词。</p></section>
   <section class="shell search-page"><label for="search-input">搜索关键词</label><div class="search-field"><span aria-hidden="true">⌕</span><input id="search-input" type="search" placeholder="例如：Velocity、Agent、类加载" autocomplete="off" autofocus /><kbd>/</kbd></div><p id="search-status" role="status">输入关键词开始搜索。</p><div id="search-results" class="search-results"></div></section>
   <script is:inline type="module">
     const input = document.querySelector('#search-input');

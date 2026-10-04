@@ -5,7 +5,7 @@ const posts = await allPosts();
 const years = [...new Set(posts.map((post) => dateText(post).slice(0, 4)))];
 ---
 <BaseLayout title="全部文章" current="/archives/">
-  <section class="page-head shell"><span class="eyebrow"><span class="eyebrow-line"></span> ARCHIVE / {posts.length} POSTS</span><h1>全部文章</h1><p>按时间翻阅写过的东西。专题页提供另一条阅读路线。</p><div class="page-head-links"><a href="/topics/">去专题页 ↗</a><a href="/search/">搜索文章 ↗</a></div></section>
+  <section class="page-head shell"><span class="eyebrow"><span class="eyebrow-line"></span> ARCHIVE / {posts.length} POSTS</span><h1>全部文章</h1><p>沿时间线回看问题与答案。若想循着同一个主题往前走，也可以去专题页。</p><div class="page-head-links"><a href="/topics/">去专题页 ↗</a><a href="/search/">搜索文章 ↗</a></div></section>
   <section class="shell archive-list">
     {years.map((year) => <div class="archive-year"><h2>{year}<span>{posts.filter((post) => dateText(post).startsWith(year)).length} 篇</span></h2><div>{posts.filter((post) => dateText(post).startsWith(year)).map((post) => <a class="archive-row" href={postUrl(post)}><time datetime={dateText(post)}>{dateText(post).slice(5)}</time><span>{post.data.title}</span><b aria-hidden="true">↗</b></a>)}</div></div>)}
   </section>
