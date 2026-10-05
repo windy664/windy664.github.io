@@ -40,11 +40,11 @@ html { scroll-behavior: smooth; background: var(--bg); }
 body { margin: 0; background: transparent; color: var(--ink); -webkit-font-smoothing: antialiased; }
 body > main, body > footer { position: relative; z-index: 1; }
 .scene-backdrop { position: fixed; inset: 0; z-index: 0; width: 100%; height: 100vh; height: 100dvh; overflow: hidden; pointer-events: none; background: #779197; }
-.scene-photo { position: absolute; inset: -3%; background-size: cover; background-position: center; animation: scene-glide 36s ease-in-out infinite alternate; will-change: transform; }
+.scene-photo { position: absolute; inset: 0; background-size: cover; background-position: center; }
 .scene-photo-day { background-image: url('/scenery/alpine-lake-day.webp'); }
 .scene-photo-dusk { background-image: url('/scenery/alpine-lake-dusk.webp'); opacity: 0; transition: opacity 1.2s ease; }
 :root[data-theme='dark'] .scene-photo-dusk { opacity: 1; }
-.scene-water { position: absolute; inset: -3%; background-size: cover; background-position: center; clip-path: inset(54% 0 0); opacity: .34; animation: water-flow 12s ease-in-out infinite alternate; will-change: transform, background-position; }
+.scene-water { position: absolute; inset: 0; background-size: cover; background-position: center; clip-path: inset(54% 0 0); opacity: .34; animation: water-flow 12s ease-in-out infinite alternate; will-change: transform, background-position; }
 .scene-water-day { background-image: url('/scenery/alpine-lake-day.webp'); }
 .scene-water-dusk { background-image: url('/scenery/alpine-lake-dusk.webp'); opacity: 0; transition: opacity 1.2s ease; animation-delay: -5s; }
 :root[data-theme='dark'] .scene-water-day { opacity: 0; }
@@ -52,14 +52,12 @@ body > main, body > footer { position: relative; z-index: 1; }
 .water-shimmer { position: absolute; left: -15%; right: -15%; height: 22%; top: 61%; opacity: .28; background: repeating-linear-gradient(176deg, transparent 0 8px, rgba(255,255,255,.32) 9px, transparent 11px 20px); mask-image: linear-gradient(90deg, transparent, #000 20% 78%, transparent); animation: shimmer-drift 9s linear infinite; }
 .water-shimmer-two { top: 72%; opacity: .17; transform: scaleX(.72); animation-duration: 14s; animation-direction: reverse; }
 :root[data-theme='dark'] .water-shimmer { opacity: .12; }
-.scene-mist { position: absolute; left: -25%; right: -25%; top: 47%; height: 24%; background: radial-gradient(ellipse at center, rgba(255,255,255,.2), transparent 65%); filter: blur(30px); opacity: .28; animation: mist-drift 28s ease-in-out infinite alternate; }
+.scene-mist { position: absolute; left: -25%; right: -25%; top: 47%; height: 24%; background: radial-gradient(ellipse at center, rgba(255,255,255,.2), transparent 65%); filter: blur(30px); opacity: .28; }
 :root[data-theme='dark'] .scene-mist { opacity: .13; }
 .scene-backdrop::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(248,247,243,.02), rgba(248,247,243,.08) 55%, rgba(248,247,243,.02)); }
 :root[data-theme='dark'] .scene-backdrop::after { background: linear-gradient(180deg, rgba(10,22,30,.03), rgba(10,22,30,.1) 55%, rgba(10,22,30,.03)); }
-@keyframes scene-glide { from { transform: scale(1.04) translate3d(-.4%, 0, 0); } to { transform: scale(1.1) translate3d(.4%, -.8%, 0); } }
 @keyframes water-flow { from { transform: scale(1.045) translate3d(-.65%, .15%, 0) skewX(-.18deg); background-position: 49.5% center; } to { transform: scale(1.075) translate3d(.65%, -.15%, 0) skewX(.18deg); background-position: 50.5% center; } }
 @keyframes shimmer-drift { from { translate: -3% 0; } to { translate: 3% 0; } }
-@keyframes mist-drift { from { transform: translateX(-5%); } to { transform: translateX(5%); } }
 a { color: inherit; text-decoration: none; }
 button, input { font: inherit; }
 button { cursor: pointer; }
