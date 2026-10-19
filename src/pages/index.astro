@@ -4,7 +4,7 @@ import PostCard from '../components/PostCard.astro';
 import { allPosts, categories, categoryUrl, postUrl } from '../lib/posts';
 
 const posts = await allPosts();
-const featured = posts.find((post) => post.id.includes('windyagent-from-framework-to-application')) || posts[0];
+const featured = posts[0];
 const recent = posts.filter((post) => post.id !== featured.id).slice(0, 8);
 const mainCategories = categories(posts).slice(0, 5);
 ---
