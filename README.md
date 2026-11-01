@@ -39,6 +39,18 @@ git push origin master
 
 `post:publish` 会取消草稿标记，并把发布时间设为当前北京时间。推送 `master` 后 GitHub Actions 自动构建和部署；线上能否访问以 Actions 的部署结果为准。不要在文章尚未写完时手动删除 `draft: true`。
 
+## 英文翻译
+
+`source/_posts-en/` 存放选中文章的英文版，网址在 `/en/` 前缀下，与中文版按同名文件互链。翻译由本机 `kimi` CLI 完成，按源文件哈希增量跳过：
+
+```sh
+npm run post:translate -- <文件名去掉.md>   # 翻译指定文章
+npm run post:translate -- --all              # 全量（增量，已是最新的会跳过）
+npm run post:translate -- --all --force      # 强制重翻
+```
+
+翻译结果需要人工通读校对后再提交；脚本只做生成，不保证措辞质量。分类名的中英映射写死在 `scripts/translate.mjs`。
+
 ## 查找与修改
 
 ```sh
