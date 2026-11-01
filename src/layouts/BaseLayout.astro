@@ -8,7 +8,6 @@ interface Props {
   current?: string;
   noIndex?: boolean;
   article?: boolean;
-  lang?: 'zh-CN' | 'en';
 }
 const {
   title = 'Torine 的博客',
@@ -16,27 +15,19 @@ const {
   current = '',
   noIndex = false,
   article = false,
-  lang = 'zh-CN',
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site).toString();
-const isEn = lang === 'en';
-const nav = isEn
-  ? [
-      { label: 'Posts', href: '/en/' },
-      { label: '中文版', href: '/' },
-    ]
-  : [
-      { label: '首页', href: '/' },
-      { label: '文章', href: '/archives/' },
-      { label: '专题', href: '/topics/' },
-      { label: '分类', href: '/categories/' },
-      { label: '搜索', href: '/search/' },
-      { label: '关于', href: '/about/' },
-    ];
-const homeHref = isEn ? '/en/' : '/';
+const nav = [
+  { label: '首页', href: '/' },
+  { label: '文章', href: '/archives/' },
+  { label: '专题', href: '/topics/' },
+  { label: '分类', href: '/categories/' },
+  { label: '搜索', href: '/search/' },
+  { label: '关于', href: '/about/' },
+];
 ---
 <!doctype html>
-<html lang={lang}>
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -60,7 +51,7 @@ const homeHref = isEn ? '/en/' : '/';
     <SceneBackdrop />
     <header class="site-header">
       <div class="shell header-inner">
-        <a class="brand" href={homeHref} aria-label="Torine 的博客首页"><span class="brand-mark">T</span><span>Torine<span class="brand-dot">.</span></span></a>
+        <a class="brand" href="/" aria-label="Torine 的博客首页"><span class="brand-mark">T</span><span>Torine<span class="brand-dot">.</span></span></a>
         <nav class="main-nav" aria-label="主导航">
           {nav.map((item) => <a href={item.href} aria-current={current === item.href ? 'page' : undefined}>{item.label}</a>)}
         </nav>
@@ -73,10 +64,8 @@ const homeHref = isEn ? '/en/' : '/';
     <main id="main"><slot /></main>
     <footer class="site-footer">
       <div class="shell footer-inner">
-        {isEn
-          ? <p>Torine's Blog <span aria-hidden="true">·</span> Notes from the build log, for the next leg of the road.</p>
-          : <p>Torine 的博客 <span aria-hidden="true">·</span> 写下走过的路，也为下一程留一盏灯。</p>}
-        <div><a href="/rss.xml">RSS</a><a href="https://github.com/windy664" target="_blank" rel="noopener noreferrer">GitHub ↗</a><a href="#main">{isEn ? 'Back to top ↑' : '回到顶部 ↑'}</a></div>
+        <p>Torine 的博客 <span aria-hidden="true">·</span> 写下走过的路，也为下一程留一盏灯。</p>
+        <div><a href="/rss.xml">RSS</a><a href="https://github.com/windy664" target="_blank" rel="noopener noreferrer">GitHub ↗</a><a href="#main">回到顶部 ↑</a></div>
       </div>
     </footer>
     <script>

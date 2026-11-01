@@ -1,17 +1,16 @@
 ---
 import { render } from 'astro:content';
 import BaseLayout from '../../../../../layouts/BaseLayout.astro';
-import { allPosts, categoryUrl, dateText, enTranslationMap, excerpt, postSlug, postUrl, readingMinutes, tagUrl } from '../../../../../lib/posts';
+import { allPosts, categoryUrl, dateText, excerpt, postUrl, readingMinutes, tagUrl } from '../../../../../lib/posts';
 
 export async function getStaticPaths() {
   const posts = await allPosts();
-  const translations = await enTranslationMap();
   return posts.map((post, index) => {
     const [, year, month, day, slug] = postUrl(post).split('/');
-    return { params: { year, month, day, slug }, props: { post, previous: posts[index + 1], next: posts[index - 1], enUrl: translations.get(postSlug(post)) } };
+    return { params: { year, month, day, slug }, props: { post, previous: posts[index + 1], next: posts[index - 1] } };
   });
 }
-const { post, previous, next, enUrl } = Astro.props;
+const { post, previous, next } = Astro.props;
 const { Content, headings } = await render(post);
 const category = post.data.categories[0];
 ---
@@ -21,7 +20,7 @@ const category = post.data.categories[0];
       <header class="article-header">
         <div class="article-crumbs"><a href="/">首页</a><span>/</span><a href="/archives/">文章</a>{category && <><span>/</span><a href={categoryUrl(category)}>{category}</a></>}</div>
         <h1>{post.data.title}</h1>
-        <div class="article-meta"><time datetime={dateText(post)}>{dateText(post)}</time><span>·</span><span>{readingMinutes(post)} 分钟阅读</span>{category && <><span>·</span><a href={categoryUrl(category)}>{category}</a></>}{enUrl && <><span>·</span><a href={enUrl}>English ↗</a></>}</div>
+        <div class="article-meta"><time datetime={dateText(post)}>{dateText(post)}</time><span>·</span><span>{readingMinutes(post)} 分钟阅读</span>{category && <><span>·</span><a href={categoryUrl(category)}>{category}</a></>}</div>
       </header>
       <div class="article-body prose" data-pagefind-body><Content /></div>
       {post.data.tags.length > 0 && <div class="article-tags"><span>标签</span>{post.data.tags.map((tag) => <a href={tagUrl(tag)}>#{tag}</a>)}</div>}

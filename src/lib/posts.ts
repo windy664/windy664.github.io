@@ -1,27 +1,17 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 
 export type Post = CollectionEntry<'posts'>;
-export type EnPost = CollectionEntry<'postsEn'>;
-type AnyPost = Post | EnPost;
 
-export function dateText(post: AnyPost): string {
+export function dateText(post: Post): string {
   const value = post.data.date;
   if (value instanceof Date) return value.toISOString().slice(0, 10);
   return String(value).slice(0, 10);
 }
 
-export function postSlug(post: AnyPost): string {
-  return post.id.replace(/\.md$/, '').split('/').pop() ?? post.id;
-}
-
 export function postUrl(post: Post): string {
   const [year, month, day] = dateText(post).split('-');
-  return `/${year}/${month}/${day}/${postSlug(post)}/`;
-}
-
-export function postUrlEn(post: EnPost): string {
-  const [year, month, day] = dateText(post).split('-');
-  return `/en/${year}/${month}/${day}/${postSlug(post)}/`;
+  const slug = post.id.replace(/\.md$/, '').split('/').pop();
+  return `/${year}/${month}/${day}/${slug}/`;
 }
 
 export function termSlug(term: string): string {
@@ -36,7 +26,7 @@ export function tagUrl(tag: string): string {
   return `/tags/${encodeURIComponent(termSlug(tag))}/`;
 }
 
-export function excerpt(post: AnyPost, length = 140): string {
+export function excerpt(post: Post, length = 140): string {
   return (post.body || '')
     .split('<!-- more -->')[0]
     .replace(/^---[\s\S]*?---/m, '')
@@ -49,26 +39,15 @@ export function excerpt(post: AnyPost, length = 140): string {
     .slice(0, length);
 }
 
-export function readingMinutes(post: AnyPost): number {
+export function readingMinutes(post: Post): number {
   return Math.max(1, Math.round((post.body || '').length / 450));
 }
 
 export async function allPosts(): Promise<Post[]> {
-  return (await getCollection('posts', ({ data }) => !data.draft)).sort(comparePosts);
-}
-
-export async function allPostsEn(): Promise<EnPost[]> {
-  return (await getCollection('postsEn', ({ data }) => !data.draft)).sort(comparePosts);
-}
-
-function comparePosts(a: AnyPost, b: AnyPost): number {
-  return (b.data.date instanceof Date ? b.data.date.toISOString() : String(b.data.date))
-    .localeCompare(a.data.date instanceof Date ? a.data.date.toISOString() : String(a.data.date)) || a.id.localeCompare(b.id);
-}
-
-export async function enTranslationMap(): Promise<Map<string, string>> {
-  const translated = await allPostsEn();
-  return new Map(translated.map((post) => [postSlug(post), postUrlEn(post)]));
+  return (await getCollection('posts', ({ data }) => !data.draft)).sort((a, b) =>
+    (b.data.date instanceof Date ? b.data.date.toISOString() : String(b.data.date))
+      .localeCompare(a.data.date instanceof Date ? a.data.date.toISOString() : String(a.data.date)) || a.id.localeCompare(b.id)
+  );
 }
 
 export function categories(posts: Post[]): { name: string; count: number }[] {
