@@ -39,6 +39,14 @@ git push origin master
 
 `post:publish` 会取消草稿标记，并把发布时间设为当前北京时间。推送 `master` 后 GitHub Actions 自动构建和部署；线上能否访问以 Actions 的部署结果为准。不要在文章尚未写完时手动删除 `draft: true`。
 
+## 自动发布（ru41）
+
+日常写作在 Obsidian 仓库的 `06-Blog-博客/` 里进行：草稿放 `Drafts-草稿/`，定稿移入 `Published-已发布/YYYY-MM/`（月份按文件名日期前缀）。ru41 每隔约 10 分钟自动校验并写入本仓库 `source/_posts/` 后推送，无需手动跑上面的命令；下架则是把文件移出已发布目录。
+
+自动发布的校验规则：必须有 frontmatter；`title` 必填；`date` 缺省取当天；`draft` 不能为 true；`categories` 只选一个（沿用现有分类）；`tags` 最多 8 个。
+
+在本仓库直接改（GitHub 网页编辑、别的机器推送 `master`）与自动发布互不冲突：ru41 推送前会先 rebase 到远端最新提交。
+
 ## 查找与修改
 
 ```sh
