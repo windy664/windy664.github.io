@@ -1,5 +1,5 @@
 ---
-title: 一句「你好」要等三次 LLM——我从 Hermes 偷来的功能，反手把 Agent 拖慢了
+title: 从 Hermes 抄来的功能，把我的 Agent 拖慢了
 date: 2026-06-21 17:30:00
 tags: [Agent, 性能优化, 架构反思, 工程反思]
 categories: [AI 应用]

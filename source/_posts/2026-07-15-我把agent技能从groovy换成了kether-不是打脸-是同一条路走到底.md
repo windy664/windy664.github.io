@@ -1,5 +1,5 @@
 ---
-title: 我把 Agent 技能从 Groovy 换成了 Kether——不是打脸，是同一条路走到底
+title: 把 Agent 技能从 Groovy 换成 Kether
 date: 2026-07-15 22:00:00
 tags: [Agent, Groovy, Kether, TabooLib, 安全, DSL, Minecraft]
 categories: [AI 应用]
