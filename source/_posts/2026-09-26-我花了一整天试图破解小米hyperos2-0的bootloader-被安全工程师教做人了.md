@@ -21,11 +21,11 @@ categories:
 
 ## 结论放前面
 
-**没 root 的情况下，HyperOS 2.0 的 BootLoader 绑定加密无解。**
+没 root 的情况下，HyperOS 2.0 的 BootLoader 绑定加密无解。
 
 不是"很难"，是"理论上不可能"。小米这次把信任根放在了硬件和服务器端——设备私钥烧在芯片里拿不出来，RSA 私钥只在服务器上，serviceToken 加密存储没有 root 看不到。你想改数据？先解密。想解密？先拿私钥。私钥在哪？在芯片里。芯片怎么访问？先 root。root 怎么拿？先解锁 BL。BL 怎么解？先改数据。
 
-**完美的死锁。**
+完美的死锁。
 
 ---
 
@@ -120,9 +120,9 @@ AES-128-CBC，密钥写死在代码里。谁都能解。GitHub 上的工具就�
 
 ### 新版（HyperOS 2.0）
 
-**注意：这里有个关键误解需要澄清。**
+注意：这里有个关键误解需要澄清。
 
-之前我一直在研究 `LogEncryptor` 类，以为它就是请求加密的核心。实际上，**`LogEncryptor` 只用于 logcat 日志加密，不是请求数据加密**。
+之前我一直在研究 `LogEncryptor` 类，以为它就是请求加密的核心。实际上，`LogEncryptor` 只用于 logcat 日志加密，不是请求数据加密。
 
 #### LogEncryptor — 只是日志
 
@@ -142,18 +142,18 @@ this.mEncrytedKey = Base64.encodeToString(cipher.doFinal(secretKeyGenerateKey.ge
 
 加密后的日志格式：`#&^<RSA加密的AES密钥>!!<AES加密的数据>^&#`
 
-- **AES 算法**：AES-256-CBC（不是之前猜的 AES-128）
-- **IV**：`"bootloaderXiaomi"`（16 字节）
-- **AES 密钥**：每次请求随机生成，被 RSA-2048 公钥保护
-- **RSA 公钥**：硬编码在 DEX 里，私钥只在服务器上
+- AES 算法：AES-256-CBC（不是之前猜的 AES-128）
+- IV：`"bootloaderXiaomi"`（16 字节）
+- AES 密钥：每次请求随机生成，被 RSA-2048 公钥保护
+- RSA 公钥：硬编码在 DEX 里，私钥只在服务器上
 
-这个加密只用在 `Log.i()` 输出的日志里，方便开发者调试。**实际发给服务器的 POST 数据不走这个加密。**
+这个加密只用在 `Log.i()` 输出的日志里，方便开发者调试。实际发给服务器的 POST 数据不走这个加密。
 
 #### 真正的请求签名机制
 
 `CloudDeviceStatus.bindAccountWithDevice()` 是绑定流程的核心。
 
-**1. 收集设备信息**
+1. 收集设备信息
 
 ```java
 map.put("userId", accountName);           // 小米账号
@@ -166,7 +166,7 @@ map.put("cloudsp_fid", fid);               // 安全设备 ID
 map.put("cloudsp_nonce", getNonce(context, fid)); // 防重放 nonce
 ```
 
-**2. 硬件签名**
+2. 硬件签名
 
 ```java
 byte[] signData = getSignData(context, map);
@@ -175,7 +175,7 @@ map.put("cloudp_sign", Utils.binToHex(signData).toLowerCase());
 
 `getSignData()` 把所有 `cloudsp_` 开头的字段按字典序排列拼接，然后调用 `MiuiFidSigner.signWithDeviceCredential()` 进行硬件级签名。
 
-**3. HMAC 签名**
+3. HMAC 签名
 
 ```java
 Mac mac = Mac.getInstance("HmacSHA1");
@@ -185,7 +185,7 @@ String sign = binToHex(mac.doFinal(("POST\n/v1/unlock/applyBind\ndata=" + data +
 
 HMAC 密钥没变，还是那个 64 字符的硬编码值。
 
-**4. 带上 Cookie 认证**
+4. 带上 Cookie 认证
 
 ```java
 ExtendedAuthToken authToken = Utils.getAuthToken(context);
@@ -193,17 +193,17 @@ String encryptedAccountName = Utils.getEncryptedAccountName(context);
 cookie = "serviceToken=" + authToken.authToken + ";cUserId=" + encryptedAccountName;
 ```
 
-**5. 发送请求**
+5. 发送请求
 
 ```java
 new XHttpClient().syncPost("https://unlock.update.miui.com/v1/unlock/applyBind", headers, formData);
 ```
 
 POST 数据就是普通的 form data，没有额外加密。安全靠的是：
-- **serviceToken** 验证身份
-- **cloudp_sign** 验证数据完整性（硬件签名）
-- **sign** 验证请求完整性（HMAC）
-- **nonce** 防重放攻击
+- serviceToken 验证身份
+- cloudp_sign 验证数据完整性（硬件签名）
+- sign 验证请求完整性（HMAC）
+- nonce 防重放攻击
 
 ---
 
@@ -225,7 +225,7 @@ public class MiuiFidSigner {
 }
 ```
 
-`SecurityDeviceCredentialAbility` 是小米的安全 SDK，底层调用的是芯片级安全模块（TrustZone/TEE）。设备私钥烧在硬件里，软件层面**拿不出来**。你只能让它帮你签名，但你不知道签名密钥是什么。
+`SecurityDeviceCredentialAbility` 是小米的安全 SDK，底层调用的是芯片级安全模块（TrustZone/TEE）。设备私钥烧在硬件里，软件层面拿不出来。你只能让它帮你签名，但你不知道签名密钥是什么。
 
 ### SecurityDeviceCredentialAbility — 硬件签名 SDK
 
@@ -283,7 +283,7 @@ serviceToken 实际上是两个值的组合：`authToken,security`（逗号分�
 SystemProperties.set("persist.fastboot.enable", "1");  // 接受
 ```
 
-这个属性只是让用户"同意"解锁流程，**不是解锁本身**。
+这个属性只是让用户"同意"解锁流程，不是解锁本身。
 
 ### HeartbeatJobService — 心跳机制
 
@@ -301,7 +301,7 @@ new JobInfo.Builder(44012, new ComponentName(context, HeartbeatJobService.class)
 
 ### RootManagementPreferenceController — 设备黑名单
 
-代码里有一个**针对特定设备的硬编码检查**：
+代码里有一个针对特定设备的硬编码检查：
 
 ```java
 if (SystemProperties.getInt("ro.product.first_api_level", 31) > 30 
@@ -311,9 +311,9 @@ if (SystemProperties.getInt("ro.product.first_api_level", 31) > 30
 }
 ```
 
-**sunstone** 就是 Redmi Note 12，**moonstone** 是 Redmi Note 12 Pro。小米直接把这两款设备列入了"不支持 Root"的黑名单。
+sunstone 就是 Redmi Note 12，moonstone 是 Redmi Note 12 Pro。小米直接把这两款设备列入了"不支持 Root"的黑名单。
 
-而且这个检查只在 `IS_STABLE_VERSION && !IS_INTERNATIONAL_BUILD` 时生效——**国际版和开发版不受此限制**。
+而且这个检查只在 `IS_STABLE_VERSION && !IS_INTERNATIONAL_BUILD` 时生效——国际版和开发版不受此限制。
 
 ---
 
@@ -354,7 +354,7 @@ Settings App
 
 ## 关键发现：30001
 
-在折腾过程中，我一直用 logcat 监听 `CloudDeviceStatus`。虽然我自己的伪造请求全是 10000，但我捕获到了 **Settings 应用自己发的请求的服务器响应**：
+在折腾过程中，我一直用 logcat 监听 `CloudDeviceStatus`。虽然我自己的伪造请求全是 10000，但我捕获到了 Settings 应用自己发的请求的服务器响应：
 
 ```json
 {
@@ -365,9 +365,9 @@ Settings App
 
 这个信息量很大：
 
-1. **服务器能处理请求**。Settings 发的数据，服务器解析成功了（30001 不是 10000）。
-2. **问题在授权不在加密**。服务器拒绝是因为设备没授权，不是签名验证失败。
-3. **原来的绕过思路理论上是对的**。改 `V816`→`V14` 应该能绕过，但我改不了数据——因为数据被硬件签名保护了。
+1. 服务器能处理请求。Settings 发的数据，服务器解析成功了（30001 不是 10000）。
+2. 问题在授权不在加密。服务器拒绝是因为设备没授权，不是签名验证失败。
+3. 原来的绕过思路理论上是对的。改 `V816`→`V14` 应该能绕过，但我改不了数据——因为数据被硬件签名保护了。
 
 我还看到 Settings 应用每隔一秒重试一次，每次都 30001。它自己也搞不定。
 
@@ -393,7 +393,7 @@ if data.startswith("#&^") and "!!" in data:
 ValueError: Data must be padded to 16 byte boundary in CBC mode
 ```
 
-废话。这是 RSA 加密后的东西，你拿 AES 密钥去解，当然不对。而且就算你解开了，那也只是**日志**，不是实际请求数据。
+废话。这是 RSA 加密后的东西，你拿 AES 密钥去解，当然不对。而且就算你解开了，那也只是日志，不是实际请求数据。
 
 ### 方法二：降级 Settings APK
 
@@ -408,7 +408,7 @@ adb install /tmp/Settings.apk
 
 我不死心，试了 session 安装、先卸载再装、各种姿势。最后卸载成功了但安装还是失败，差点把 Settings 搞没，赶紧用 `cmd package install-existing com.android.settings` 恢复回去。
 
-**教训：别手贱卸载系统应用。**
+教训：别手贱卸载系统应用。
 
 ### 方法三：app_process 跑 Java（深入版）
 
@@ -460,15 +460,15 @@ UID: 2000
   ... (30 个小米/MIUI 相关服务)
 ```
 
-**关键发现：**
+关键发现：
 
-1. **Shell UID (2000) 能拿到两个关键服务的 Binder！** `IAccountManager` 和 `miui.sedc` 都能连上。
-2. **但操作全被拒绝。** AccountManager 的 `getAccounts` 返回空（权限不足），miui.sedc 的 `sign` 返回的错误信息解码后是 `"Need com.xiaomi."`——**它在检查调用者包名**。
-3. **30 个小米/MIUI 服务可见**，但都有权限校验。
+1. Shell UID (2000) 能拿到两个关键服务的 Binder！ `IAccountManager` 和 `miui.sedc` 都能连上。
+2. 但操作全被拒绝。 AccountManager 的 `getAccounts` 返回空（权限不足），miui.sedc 的 `sign` 返回的错误信息解码后是 `"Need com.xiaomi."`——它在检查调用者包名。
+3. 30 个小米/MIUI 服务可见，但都有权限校验。
 
 这说明小米在 Binder 层面就做了调用者身份校验。你虽然能"看到"这些服务，但你不是 `com.xiaomi` 包名的应用，它就不帮你干活。
 
-**这条路也走不通。**
+这条路也走不通。
 
 ### 方法四：伪造请求
 
@@ -486,7 +486,7 @@ data = {
 }
 ```
 
-结果：**所有请求都返回 `10000`（参数异常）**。
+结果：所有请求都返回 `10000`（参数异常）。
 
 完整数据、最小数据、不带 nonce、不带签名、带 Cookie、V14、V816——全 10000。连空数据都 10000。
 
@@ -494,11 +494,11 @@ data = {
 
 ### 方法五：拦截 HTTP 流量
 
-**mitmproxy**：设置了 adb reverse 和设备代理，一个包都没捕获到。HTTPS 流量加密的，HTTP 代理拦不住。要解密 HTTPS 需要在设备上装 CA 证书——又要 root。
+mitmproxy：设置了 adb reverse 和设备代理，一个包都没捕获到。HTTPS 流量加密的，HTTP 代理拦不住。要解密 HTTPS 需要在设备上装 CA 证书——又要 root。
 
-**iptables**：`Permission denied (you must be root)`。
+iptables：`Permission denied (you must be root)`。
 
-**strace**：`ptrace(PTRACE_SEIZE): Operation not permitted`。
+strace：`ptrace(PTRACE_SEIZE): Operation not permitted`。
 
 所有能看网络流量的方法都要 root。
 
@@ -543,11 +543,11 @@ frida-server 要 root。又是一堵墙。
 | 提取 serviceToken | 权限不够 |
 | Frida | frida-server 要 root |
 
-**每条路最后都指向同一个问题：没有 root。**
+每条路最后都指向同一个问题：没有 root。
 
 而 root 需要解锁 BL，解锁 BL 需要绕过加密，绕过加密需要 root。
 
-小米这次的设计思路很清晰：**把信任根放在硬件和服务器端**。
+小米这次的设计思路很清晰：把信任根放在硬件和服务器端。
 
 - 设备私钥烧在芯片里（TrustZone/TEE），软件拿不出来
 - RSA 私钥在服务器上，客户端只有公钥
@@ -567,23 +567,23 @@ frida-server 要 root。又是一堵墙。
 | account | `android.accounts.IAccountManager` | ✅ | getAccounts 返回 -2/-4（权限不足）|
 | miui.sedc | `ISecurityDeviceCredentialManager.v1` | ✅ | sign 返回 `"Need com.xiaomi."`（包名校验）|
 
-这意味着小米在**两个层面**做了防护：
+这意味着小米在两个层面做了防护：
 
-**1. miui.sedc：包名校验**
+1. miui.sedc：包名校验
 
 `miui.sedc` 是一个系统服务，通过 Binder IPC 提供硬件签名功能。但它的 `sign()` 方法在执行前会检查调用者的 UID 对应的包名。Shell UID (2000) 对应的是 `com.android.shell`，不是 `com.xiaomi`，所以直接被拒绝。
 
 错误信息 `"Need com.xiaomi."` 说明服务端期望调用者是小米账号应用（`com.xiaomi.account`）或设置应用（`com.android.settings`，UID 1000）。
 
-**2. AccountManager：权限校验**
+2. AccountManager：权限校验
 
 Android 的 AccountManager 系统服务对 `getAccounts()` 做了权限控制。Shell UID 没有 `GET_ACCOUNTS` 权限，所以即使 Binder 连接成功，返回的也是错误码（-2 或 -4），不是账号列表。
 
-**3. ActivityThread：无 Context**
+3. ActivityThread：无 Context
 
 `app_process` 环境下 `ActivityThread.systemMain()` 返回 null，意味着无法获取系统 Context。没有 Context，`AccountManager.get(context)` 就无法调用。即使用反射绕过了 ServiceManager 的隐藏 API 限制，也过不了这一关。
 
-**结论：Binder IPC 能"看到"服务，但过不了身份校验。** 这是 Android 的安全模型在起作用——UID-based 权限控制。Shell UID 的权限被严格限制，不能访问其他应用的数据或调用需要特权的系统服务。
+结论：Binder IPC 能"看到"服务，但过不了身份校验。 这是 Android 的安全模型在起作用——UID-based 权限控制。Shell UID 的权限被严格限制，不能访问其他应用的数据或调用需要特权的系统服务。
 
 ---
 
@@ -609,7 +609,7 @@ Android 的 AccountManager 系统服务对 `getAccounts()` 做了权限控制。
 
 我查了一圈 Android Security Bulletin 和 MediaTek Security Bulletin，找到了这些可能相关的 CVE：
 
-**USB 子系统（已被野外利用的 0day）：**
+USB 子系统（已被野外利用的 0day）：
 
 | CVE | 子系统 | 类型 | 补丁时间 | 利用条件 |
 |-----|--------|------|----------|----------|
@@ -617,9 +617,9 @@ Android 的 AccountManager 系统服务对 `getAccounts()` 做了权限控制。
 | CVE-2024-53197 | USB Audio ALSA | 越界写入 → 提权 | 2025-04 | 需要物理 USB 访问 |
 | CVE-2024-53150 | USB | 信息泄露 | 2025-04 | 需要物理 USB 访问 |
 
-这三个是 Cellebrite 法证工具用的漏洞链，由 Amnesty International 披露。需要插入恶意 USB 设备触发，**从 ADB shell 无法利用**。
+这三个是 Cellebrite 法证工具用的漏洞链，由 Amnesty International 披露。需要插入恶意 USB 设备触发，从 ADB shell 无法利用。
 
-**纯软件提权（从 ADB shell 就能触发）：**
+纯软件提权（从 ADB shell 就能触发）：
 
 | CVE | 子系统 | 类型 | 补丁时间 |
 |-----|--------|------|----------|
@@ -628,9 +628,9 @@ Android 的 AccountManager 系统服务对 `getAccounts()` 做了权限控制。
 | CVE-2024-46852 | dma-buf | 提权 | 2025-03 |
 | CVE-2024-43097 | Skia | 提权 | 2024-12 |
 
-这几个可以通过 socket 调用、Binder IPC、图形渲染等系统调用从 ADB shell 触发。但**没有公开的利用代码**。
+这几个可以通过 socket 调用、Binder IPC、图形渲染等系统调用从 ADB shell 触发。但没有公开的利用代码。
 
-**MediaTek 特定漏洞（影响 MT6833）：**
+MediaTek 特定漏洞（影响 MT6833）：
 
 2026 年 9 月的 MediaTek 安全公告中有 11 个 CVE 影响 MT6833：
 
@@ -646,7 +646,7 @@ Android 的 AccountManager 系统服务对 `getAccounts()` 做了权限控制。
 
 这些影响 MT6833，但目前没有公开利用代码。
 
-**实际验证结果：**
+实际验证结果：
 
 ```bash
 $ adb shell getprop ro.build.version.security_patch
@@ -656,34 +656,34 @@ $ adb shell uname -r
 5.4.289-qgki-g3dd36cfe40b3
 ```
 
-安全补丁是 2025 年 8 月 1 日，**已知的内核 CVE 全部被修补**：
+安全补丁是 2025 年 8 月 1 日，已知的内核 CVE 全部被修补：
 
 | CVE | 补丁时间 | 状态 |
 |-----|----------|------|
-| CVE-2024-43097 (Skia) | 2024-12 | ✅ 已修补 |
-| CVE-2024-53104 (USB UVC) | 2025-02 | ✅ 已修补 |
-| CVE-2024-46852 (dma-buf) | 2025-03 | ✅ 已修补 |
-| CVE-2024-50264 (Net) | 2025-04 | ✅ 已修补 |
-| CVE-2024-56556 (Binder) | 2025-04 | ✅ 已修补 |
-| CVE-2024-53197 (USB Audio) | 2025-04 | ✅ 已修补 |
+| CVE-2024-43097 (Skia) | 2024-12 | 已修补 |
+| CVE-2024-53104 (USB UVC) | 2025-02 | 已修补 |
+| CVE-2024-46852 (dma-buf) | 2025-03 | 已修补 |
+| CVE-2024-50264 (Net) | 2025-04 | 已修补 |
+| CVE-2024-56556 (Binder) | 2025-04 | 已修补 |
+| CVE-2024-53197 (USB Audio) | 2025-04 | 已修补 |
 
 小米补得很勤。
 
-**剩余方向**：
+剩余方向：
 
-1. **CVE-2026-20501/20502（MediaTek vdec 堆溢出）**：2026 年 9 月公告，影响 MT6833，但没有公开利用代码。如果设备停止安全更新，这可能是最后的希望。
-2. **关注 2025 年 8 月之后公开的新 CVE**：如果有人发现新的内核提权漏洞且影响 5.4.289 内核，就有机会。
-3. **关注 [KernelSU](https://kernelsu.org) 的 MediaTek 支持进展**：如果能拿到临时 root（哪怕一次），就可以提取 serviceToken + hook 硬件签名，绕过整条链路。
+1. CVE-2026-20501/20502（MediaTek vdec 堆溢出）：2026 年 9 月公告，影响 MT6833，但没有公开利用代码。如果设备停止安全更新，这可能是最后的希望。
+2. 关注 2025 年 8 月之后公开的新 CVE：如果有人发现新的内核提权漏洞且影响 5.4.289 内核，就有机会。
+3. 关注 [KernelSU](https://kernelsu.org) 的 MediaTek 支持进展：如果能拿到临时 root（哪怕一次），就可以提取 serviceToken + hook 硬件签名，绕过整条链路。
 
 ### 方向二：物理方法
 
-**MTK BROM 模式**：联发科设备有 BROM（Boot ROM）模式，理论上可以通过短接测试点进入下载模式，然后用 mtkclient 工具读写分区。但 MT6833 是较新的芯片，BROM 可能已锁，需要拆机、找到测试点、焊接，有变砖风险。
+MTK BROM 模式：联发科设备有 BROM（Boot ROM）模式，理论上可以通过短接测试点进入下载模式，然后用 mtkclient 工具读写分区。但 MT6833 是较新的芯片，BROM 可能已锁，需要拆机、找到测试点、焊接，有变砖风险。
 
-**ISP 直读**：用编程器直接读 eMMC/UFS 芯片。需要拆机、焊接、专业设备。成本高、风险大。
+ISP 直读：用编程器直接读 eMMC/UFS 芯片。需要拆机、焊接、专业设备。成本高、风险大。
 
 ### 方向三：官方途径
 
-**小米社区申请**：最正规的途径。去小米社区内测中心申请解锁授权。中国版审核很严，但这是唯一不需要找漏洞、不需要拆机的路。
+小米社区申请：最正规的途径。去小米社区内测中心申请解锁授权。中国版审核很严，但这是唯一不需要找漏洞、不需要拆机的路。
 
 ### 方向四：等
 
@@ -732,11 +732,11 @@ $ adb shell uname -r
 
 折腾了一整天，白忙活。但也不是完全没收获——至少把 HyperOS 2.0 的加密协议从头到尾扒了一遍，从 DEX 里提取了所有密钥，搞清楚了整个绑定流程的链路。
 
-最大的教训：**安全是动态的**。去年能用的方法今年就不行了。小米这次的安全设计确实到位——硬件级签名 + 服务端 RSA + nonce 防重放，三层保护，每一层都需要不同的突破手段。
+最大的教训：安全是动态的。去年能用的方法今年就不行了。小米这次的安全设计确实到位——硬件级签名 + 服务端 RSA + nonce 防重放，三层保护，每一层都需要不同的突破手段。
 
 想同时突破三层？除非你能物理访问芯片内部，或者找到内核提权漏洞。
 
-**最后的希望在内核**。但实测发现 HyperOS 2.0.6.0 的安全补丁是 2025 年 8 月的，已知的内核漏洞全部被修补。只剩下 2025 年 8 月之后公开的新 CVE（如 MediaTek vdec 堆溢出）还有一线希望，但没有公开利用代码。
+最后的希望在内核。但实测发现 HyperOS 2.0.6.0 的安全补丁是 2025 年 8 月的，已知的内核漏洞全部被修补。只剩下 2025 年 8 月之后公开的新 CVE（如 MediaTek vdec 堆溢出）还有一线希望，但没有公开利用代码。
 
 对于普通用户来说，最靠谱的路还是去小米社区申请解锁授权。
 
