@@ -1,4 +1,16 @@
+<div align="center">
+
+<img src="assets/banner.svg" alt="windy664.github.io" width="100%">
+
+</div>
+
 # Torine 的博客
+
+**个人技术博客 · Astro × GitHub Pages**
+
+![Astro](https://img.shields.io/badge/Astro-7-ff5d01?style=flat-square&logo=astro&logoColor=white)
+![Pagefind](https://img.shields.io/badge/Search-Pagefind-e2b90f?style=flat-square)
+![GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-24292f?style=flat-square&logo=github&logoColor=white)
 
 个人技术博客，使用 Astro 生成静态页面，部署在 GitHub Pages。文章保留在 `source/_posts/`。旧文章的网址和文件名保持原样；新文章使用自动生成的固定编号，中文标题与网址编号互不影响。
 
