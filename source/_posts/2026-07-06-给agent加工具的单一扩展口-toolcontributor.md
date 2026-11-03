@@ -1,5 +1,5 @@
 ---
-title: 给 Agent 加工具的单一扩展口——ToolContributor
+title: ToolContributor：给 Agent 加工具只留一个口
 date: 2026-07-06 22:20:00
 tags: [Agent, 架构, 工具, Kotlin, LLM]
 categories: [架构]

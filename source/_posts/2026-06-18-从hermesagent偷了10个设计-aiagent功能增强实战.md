@@ -1,5 +1,5 @@
 ---
-title: 从 Hermes Agent 偷了 10 个设计——AI Agent 功能增强实战
+title: 从 Hermes Agent 偷了 10 个设计
 date: 2026-06-18 18:00:00
 tags: [Agent, 架构, Hermes, 开源, 功能设计]
 categories: [AI 应用]
@@ -15,7 +15,7 @@ NousResearch 的 [hermes-agent](https://github.com/NousResearch/hermes-agent) �
 
 我们原来的 `trimHistory()` 直接删最旧的消息。对话超过 20 轮后，早期的重要上下文（玩家名、操作结果、约定）全丢了。
 
-Hermes 的做法是 **trajectory compression**——用 LLM 把旧消息摘要成一条。
+Hermes 的做法是 trajectory compression——用 LLM 把旧消息摘要成一条。
 
 ```kotlin
 class ContextCompressor(

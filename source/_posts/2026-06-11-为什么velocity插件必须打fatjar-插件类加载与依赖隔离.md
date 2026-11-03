@@ -1,5 +1,5 @@
 ---
-title: 为什么 Velocity 插件必须打 fat jar——插件类加载与依赖隔离
+title: 为什么 Velocity 插件必须打 fat jar
 date: 2026-06-11 22:00:00
 tags: [Velocity, 类加载, Gradle, Minecraft]
 categories: [工程化]
@@ -59,8 +59,8 @@ shadowJar {
 
 两个关键点：
 
-- **`compileOnly` vs `implementation`**：平台运行时已提供的（velocity-api）用 `compileOnly`，编译时要它做类型检查，但不能打进 JAR（否则和平台自带的冲突）。平台不提供的用 `implementation`，由 shadow 打包。
-- **fat jar 的本质**：把所有 `implementation` 依赖的 class 解压、合并进同一个 JAR。
+- `compileOnly` vs `implementation`：平台运行时已提供的（velocity-api）用 `compileOnly`，编译时要它做类型检查，但不能打进 JAR（否则和平台自带的冲突）。平台不提供的用 `implementation`，由 shadow 打包。
+- fat jar 的本质：把所有 `implementation` 依赖的 class 解压、合并进同一个 JAR。
 
 ## 类加载隔离：为什么要 relocate
 

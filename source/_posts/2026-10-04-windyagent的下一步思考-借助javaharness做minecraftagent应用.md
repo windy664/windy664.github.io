@@ -1,5 +1,5 @@
 ---
-title: WindyAgent 的下一步思考：借助 Java Harness 做 Minecraft Agent 应用？
+title: 试试用 Java Harness 给 Minecraft 做 Agent
 date: 2026-10-04 23:00:00
 tags: [WindyAgent, Agent, AgentScope, Minecraft, 架构复盘]
 categories: [思考]

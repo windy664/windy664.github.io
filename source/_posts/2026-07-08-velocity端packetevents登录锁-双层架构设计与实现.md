@@ -1,5 +1,5 @@
 ---
-title: Velocity 端 packetevents 登录锁：双层架构设计与实现
+title: 用 packetevents 在 Velocity 端做登录锁
 date: 2026-07-08
 tags: [Minecraft, Velocity, packetevents, 网络编程, 架构设计]
 categories: [工程化]

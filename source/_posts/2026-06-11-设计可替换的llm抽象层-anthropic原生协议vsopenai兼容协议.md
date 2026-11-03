@@ -1,5 +1,5 @@
 ---
-title: 设计可替换的 LLM 抽象层——Anthropic 原生协议 vs OpenAI 兼容协议
+title: 自己动手写一层 LLM 抽象，兼容 Anthropic 和 OpenAI 两套协议
 date: 2026-06-11 21:40:00
 tags: [LLM, Agent, 架构设计, 设计模式]
 categories: [AI 应用]
@@ -13,10 +13,10 @@ categories: [AI 应用]
 
 我的 Agent 面向 Minecraft 服主，定价敏感。如果代码里写死了 Claude，会出两个问题：
 
-1. **成本**：很多服主用不起 Claude API，更想接国产模型（如小米 mimo）或本地 Ollama
-2. **绑定**：模型迭代极快，硬绑一家等于把自己锁死
+1. 成本：很多服主用不起 Claude API，更想接国产模型（如小米 mimo）或本地 Ollama
+2. 绑定：模型迭代极快，硬绑一家等于把自己锁死
 
-所以从第一天就定下：**LLM 层是策略，可在配置里切换**。配置长这样：
+所以从第一天就定下：LLM 层是策略，可在配置里切换。配置长这样：
 
 ```yaml
 llm:
@@ -63,14 +63,14 @@ sealed interface LLMMessage {
 | 助手回复结构 | `content` 是 block 数组（text / tool_use 混排） | `choices[0].message`，工具在 `tool_calls` |
 | 工具定义 | `input_schema`（JSON Schema） | `function.parameters`（JSON Schema） |
 | 触发工具的停止原因 | `stop_reason: "tool_use"` | `finish_reason: "tool_calls"` |
-| 工具结果回传 | 一个 `tool_result` block，放在 **user** 消息里 | 一条独立消息，role=`tool` |
+| 工具结果回传 | 一个 `tool_result` block，放在 user 消息里 | 一条独立消息，role=`tool` |
 | 鉴权头 | `x-api-key` + `anthropic-version` | `Authorization: Bearer` |
 
 举两个最容易踩的差异：
 
-**① 工具结果的「身份」不同。** OpenAI 用一个独立的 `role: "tool"` 消息回传执行结果；而 Anthropic 没有 tool 角色，工具结果是包在 **user** 消息里的一个 `tool_result` block。翻译层必须感知这个差异。
+① 工具结果的「身份」不同。 OpenAI 用一个独立的 `role: "tool"` 消息回传执行结果；而 Anthropic 没有 tool 角色，工具结果是包在 user 消息里的一个 `tool_result` block。翻译层必须感知这个差异。
 
-**② 助手消息的结构不同。** Anthropic 的一条助手回复可以同时包含文字和多个工具调用（block 数组混排）；OpenAI 把文字放 `content`、工具放 `tool_calls` 两个并列字段。
+② 助手消息的结构不同。 Anthropic 的一条助手回复可以同时包含文字和多个工具调用（block 数组混排）；OpenAI 把文字放 `content`、工具放 `tool_calls` 两个并列字段。
 
 正因如此，Claude 用官方 SDK（`anthropic-java`）接入，而 mimo / Ollama 这类 OpenAI 协议的，我用 OkHttp 手写一个 `OpenAICompatProvider` 统一处理——它们的协议长得几乎一样，连 Ollama 都暴露了 `/v1/chat/completions`。
 
@@ -103,11 +103,11 @@ fun run(context: AgentContext): AgentResponse {
 
 ## 设计模式视角
 
-- **策略模式**：`LLMProvider` 是策略接口，运行时按配置选具体实现
-- **适配器模式**：每个 Provider 把中立的 `LLMMessage`/`LLMResponse` 适配到各自的协议
-- **依赖倒置**：Agent 依赖抽象接口，不依赖任何具体 SDK；高层逻辑对模型一无所知
+- 策略模式：`LLMProvider` 是策略接口，运行时按配置选具体实现
+- 适配器模式：每个 Provider 把中立的 `LLMMessage`/`LLMResponse` 适配到各自的协议
+- 依赖倒置：Agent 依赖抽象接口，不依赖任何具体 SDK；高层逻辑对模型一无所知
 
-一个落地小细节：Kotlin 的 `when` 分支引用 `ClaudeProvider` 时，类是**惰性加载**的——只要用户配的是 openai，`anthropic-java` SDK 的类压根不会被加载。所以哪怕 SDK 较重，也不拖累只用国产模型的用户。
+一个落地小细节：Kotlin 的 `when` 分支引用 `ClaudeProvider` 时，类是惰性加载的——只要用户配的是 openai，`anthropic-java` SDK 的类压根不会被加载。所以哪怕 SDK 较重，也不拖累只用国产模型的用户。
 
 ## 写在最后
 

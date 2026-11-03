@@ -1,5 +1,5 @@
 ---
-title: 别人的 Agent 技能都用 Python，我的偏用 Groovy——这才是关键
+title: 别人的 Agent 技能用 Python，我的偏用 Groovy
 date: 2026-06-15 22:00:00
 tags: [Agent, LLM, 技能, Groovy, JVM, 创新]
 categories: [AI 应用]

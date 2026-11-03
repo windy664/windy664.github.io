@@ -1,5 +1,5 @@
 ---
-title: Gradle 的两个 JDK——Gradle JVM 和 Toolchain 到底有什么区别
+title: Gradle JVM 和 Toolchain 到底有什么区别
 date: 2026-06-11 21:20:00
 tags: [Gradle, 构建工具, JDK]
 categories: [工程化]
@@ -17,7 +17,7 @@ categories: [工程化]
 找到无效的 Gradle JDK 配置
 ```
 
-第一反应是：「我不是要 Java 11 吗？把 Gradle 的 JDK 设成 11 不就行了？」——结果设成 11 之后更糟，Gradle 直接起不来，因为 **Gradle 9.x 自己要求 JDK 17+**。
+第一反应是：「我不是要 Java 11 吗？把 Gradle 的 JDK 设成 11 不就行了？」——结果设成 11 之后更糟，Gradle 直接起不来，因为 Gradle 9.x 自己要求 JDK 17+。
 
 这里的关键，是 Gradle 世界里有两个完全独立的 JDK 概念，搞混了就会陷入「按下葫芦浮起瓢」的循环。
 
@@ -25,7 +25,7 @@ categories: [工程化]
 
 | | Gradle JVM | Toolchain |
 |---|---|---|
-| 作用 | 运行 Gradle 工具本身（daemon） | 编译/测试**你的代码** |
+| 作用 | 运行 Gradle 工具本身（daemon） | 编译/测试你的代码 |
 | 谁决定 | IDE 设置 / `JAVA_HOME` / `org.gradle.java.home` | `build.gradle` 里的 `java.toolchain` |
 | 版本要求 | 取决于 Gradle 版本（Gradle 9 要 17+） | 取决于你的项目目标（我这里要 11） |
 | 能一样吗 | 可以不一样 | 可以不一样 |
@@ -53,13 +53,13 @@ java {
 
 ## Toolchain 的妙处：声明式、自动下载
 
-老式做法是 `sourceCompatibility` / `targetCompatibility`，它们只是给 `javac` 传 `-source`/`-target`，**前提是你机器上得有那个 JDK**，否则交叉编译各种坑。
+老式做法是 `sourceCompatibility` / `targetCompatibility`，它们只是给 `javac` 传 `-source`/`-target`，前提是你机器上得有那个 JDK，否则交叉编译各种坑。
 
-Toolchain 把这件事变成**声明式**：
+Toolchain 把这件事变成声明式：
 
 > 「我这个模块要用 Java 11 编译」——具体去哪找 Java 11、本机没有怎么办，交给 Gradle。
 
-配合 **foojay-resolver-convention** 插件，Gradle 甚至能**自动下载**缺失的 JDK：
+配合 foojay-resolver-convention 插件，Gradle 甚至能自动下载缺失的 JDK：
 
 ```groovy
 // settings.gradle
@@ -68,7 +68,7 @@ plugins {
 }
 ```
 
-这就是为什么我本机只装了 JDK 21，却能编译出 Java 11 字节码——foojay 在背后悄悄拉了个 JDK 11 toolchain。团队协作时尤其香：每个人的 Gradle JVM 五花八门，但只要 toolchain 声明一致，**产物字节码就一致**，不会出现「在我机器上是好的」。
+这就是为什么我本机只装了 JDK 21，却能编译出 Java 11 字节码——foojay 在背后悄悄拉了个 JDK 11 toolchain。团队协作时尤其香：每个人的 Gradle JVM 五花八门，但只要 toolchain 声明一致，产物字节码就一致，不会出现「在我机器上是好的」。
 
 > 顺带一个坑：foojay-resolver `0.8.0` 与 Gradle 9 不兼容——它内部引用了 Gradle 9 已删除的 `JvmVendorSpec.IBM_SEMERU` 字段，升到 `1.0.0` 才好。插件与 Gradle 大版本的兼容性也要留意。
 
@@ -88,8 +88,8 @@ Gradle 自身是 Java 写的，每个 Gradle 版本对运行它的 JDK 有最低
 
 把它想成做菜：
 
-- **Gradle JVM** = 厨房的灶台（得够新才能开火）
-- **Toolchain** = 这道菜要求的火候（可以跟灶台最高功率不同）
+- Gradle JVM = 厨房的灶台（得够新才能开火）
+- Toolchain = 这道菜要求的火候（可以跟灶台最高功率不同）
 
 灶台再高级，也不妨碍你用小火慢炖一道 Java 11 的菜。
 
