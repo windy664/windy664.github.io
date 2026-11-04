@@ -1,10 +1,8 @@
 ---
 title: 做 AI 运维 Agent，什么活该让 LLM 干，什么活别让它碰
 date: 2026-06-13 22:00:00
-tags: [LLM, Agent, 架构, Minecraft]
+tags: [LLM, Agent, 架构, Minecraft, WindyAgent]
 categories: [思考]
-topics:
-  - windyagent
 ---
 
 「我们是个 AI 项目」——这句话最大的陷阱，是让你下意识把什么活都塞给大模型。做 WindyAgent 这阵子，我反复在「这步该不该调 LLM」上栽跟头，慢慢摸出一条分界线。

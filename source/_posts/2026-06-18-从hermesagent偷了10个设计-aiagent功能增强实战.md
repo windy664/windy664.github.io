@@ -1,10 +1,8 @@
 ---
 title: 从 Hermes Agent 偷了 10 个设计
 date: 2026-06-18 18:00:00
-tags: [Agent, 架构, Hermes, 开源, 功能设计]
+tags: [Agent, 架构, Hermes, 开源, 功能设计, WindyAgent]
 categories: [AI 应用]
-topics:
-  - windyagent
 ---
 
 NousResearch 的 [hermes-agent](https://github.com/NousResearch/hermes-agent) 是一个自学习 AI Agent 框架，有 200+ 模型支持、多平台网关、技能市场、FTS5 历史搜索等特性。我们的 MC 服务器管理 Agent 已经有基础能力（工具调用、跨服总线、知识库、安全护栏），但在上下文管理、成本控制、可观测性上有明显短板。
