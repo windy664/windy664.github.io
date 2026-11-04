@@ -1,6 +1,6 @@
 ---
 title: 我花了一整天试图破解小米 HyperOS 2.0 的 BootLoader，被安全工程师教做人了
-date: 2026-11-05 09:48:00
+date: 2026-10-05 21:59:00
 tags:
   - Android
   - 逆向工程

@@ -1,6 +1,6 @@
 ---
 title: 自己动手写一层 LLM 抽象，兼容 Anthropic 和 OpenAI 两套协议
-date: 2026-06-27 10:34:00
+date: 2026-07-03 07:10:00
 tags: [LLM, Agent, 架构设计, 设计模式]
 categories: [AI 应用]
 ---

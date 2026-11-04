@@ -1,6 +1,6 @@
 ---
 title: 用git实现obsidian双向同步
-date: 2027-01-10 20:38:00
+date: 2026-11-30 22:00:00
 tags:
   - Rust
   - 个人项目

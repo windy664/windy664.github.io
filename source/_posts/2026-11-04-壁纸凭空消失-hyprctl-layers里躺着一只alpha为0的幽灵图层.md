@@ -1,6 +1,6 @@
 ---
 title: 壁纸凭空消失，hyprctl layers 里躺着一只 alpha 为 0 的幽灵图层
-date: 2027-01-23 12:20:00
+date: 2026-11-26 06:44:00
 tags:
   - Linux
   - Omarchy
