@@ -2,7 +2,7 @@
 title: 我在 fat jar 那篇里警告过的 Jackson 冲突，今天真的炸了
 date: 2026-07-11 07:43:00
 tags: [Velocity, 类加载, Jackson, Minecraft, 调试, 工程化]
-categories: [工程化]
+categories: [技术分享]
 ---
 
 上一篇讲 fat jar 时，我把 relocate（包重定位）写成「以防万一，大多时候没事」。今天它从「以防万一」变成了「救命」——一个 `NoClassDefFoundError` 刷屏，根因正是我当时随口警告的那个。

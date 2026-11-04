@@ -2,7 +2,7 @@
 title: ToolContributor：给 Agent 加工具只留一个口
 date: 2026-08-27 19:42:00
 tags: [Agent, 架构, 工具, Kotlin, LLM]
-categories: [架构]
+categories: [技术分享]
 ---
 
 Agent 的工具（function calling）很容易长成一堆散装注册：这里 `extraTools += KnowledgeSearchTool(...)`，那里 `extraTools += RememberTool(...)`，散在各处。我的 Agent 有两个入口——Velocity 中心节点、Bukkit 嵌入式——同一组核心工具在两边各手写一遍。加一个核心工具要改两处，还老忘一处。这篇讲我怎么把「加工具」收敛成一个扩展口。

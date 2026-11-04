@@ -2,7 +2,7 @@
 title: 为什么 Velocity 插件必须打 fat jar
 date: 2026-06-26 08:00:00
 tags: [Velocity, 类加载, Gradle, Minecraft, 工程化]
-categories: [工程化]
+categories: [技术分享]
 ---
 
 写 Velocity 插件时，把第三方库（OkHttp、Jackson、SDK…）直接 `implementation` 进去，运行时一加载就 `ClassNotFoundException`。原因是 Velocity 不会帮你下载运行时依赖——你必须自己打 fat jar。

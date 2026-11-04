@@ -2,7 +2,7 @@
 title: 用 packetevents 在 Velocity 端做登录锁
 date: 2026-08-31 21:59:00
 tags: [Minecraft, Velocity, packetevents, 网络编程, 架构设计]
-categories: [工程化]
+categories: [技术分享]
 ---
 
 在 Minecraft 代理端实现玩家登录锁，听起来简单——不就是阻止玩家移动吗？但当你真正动手时会发现：Velocity 没有 `PlayerMoveEvent`，没有 `BlockBreakEvent`，甚至连 `PlayerInteractEvent` 都没有。代理层根本不感知游戏状态。

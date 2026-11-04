@@ -2,7 +2,7 @@
 title: Gradle JVM 和 Toolchain 到底有什么区别
 date: 2026-06-16 00:34:00
 tags: [Gradle, 构建工具, JDK, 工程化]
-categories: [工程化]
+categories: [技术分享]
 ---
 
 「找到无效的 Gradle JDK 配置」「Gradle 9 要求 JDK 17+，可我项目编译目标是 Java 11」——这些困惑的根源，是没分清 Gradle JVM 和 Toolchain 是两个独立的东西。
