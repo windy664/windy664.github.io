@@ -35,7 +35,7 @@ const mainCategories = categories(posts).slice(0, 5);
   <section class="home-section shell explore-section">
     <div class="section-heading"><div><span class="section-index">03 / EXPLORE</span><h2>循着线索走</h2></div><a href="/topics/" class="section-more">阅读路线 ↗</a></div>
     <div class="topic-teasers">
-      {topicTracks(posts).slice(0, 3).map((track, i) => <a href={`/topics/#${track.id}`}><span>{String(i + 1).padStart(2, '0')} / {track.label}</span><h3>{track.title}</h3><p>{track.subtitle}</p><b>阅读专题 →</b></a>)}
+      {topicTracks(posts).slice(0, 3).map((track, i) => <a href={`/topics/#${track.id}`}><span>{String(i + 1).padStart(2, '0')} / {track.subtitle}</span><h3>{track.title}</h3><p>按时间线读这一串。</p><b>阅读专题 →</b></a>)}
     </div>
     <div class="category-strip"><span>也可以按分类寻路</span>{mainCategories.map((item) => <a href={categoryUrl(item.name)}>{item.name}<small>{item.count}</small></a>)}</div>
   </section>
