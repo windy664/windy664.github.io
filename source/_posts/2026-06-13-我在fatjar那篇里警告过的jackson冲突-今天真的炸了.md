@@ -1,6 +1,6 @@
 ---
 title: 我在 fat jar 那篇里警告过的 Jackson 冲突，今天真的炸了
-date: 2026-07-20 03:16:00
+date: 2026-07-11 07:43:00
 tags: [Velocity, 类加载, Jackson, Minecraft, 调试, 工程化]
 categories: [工程化]
 ---

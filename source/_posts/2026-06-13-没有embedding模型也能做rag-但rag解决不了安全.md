@@ -1,6 +1,6 @@
 ---
 title: 没有 embedding 模型也能做 RAG，但 RAG 解决不了安全
-date: 2026-07-24 14:39:00
+date: 2026-07-15 07:54:00
 tags: [RAG, LLM, Agent, 工程反思]
 categories: [AI 应用]
 ---

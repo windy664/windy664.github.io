@@ -1,6 +1,6 @@
 ---
 title: 为什么 Velocity 插件必须打 fat jar
-date: 2026-06-28 23:21:00
+date: 2026-06-26 08:00:00
 tags: [Velocity, 类加载, Gradle, Minecraft, 工程化]
 categories: [工程化]
 ---
