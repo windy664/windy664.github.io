@@ -30,10 +30,10 @@ public void onMove(PlayerMoveEvent e) {
 
 这个方案有几个问题：
 
-1. 包已经到了子服才被拦截——有延迟，玩家可能已经移动了几个 tick
-2. 子服插件崩了锁就失效——安全依赖于子服的稳定性
-3. 每个子服都要装插件——多子服架构下维护成本高
-4. 子服需要配合——登录提示需要子服发 title/message
+1. 包已经到了子服才被拦截，有延迟，玩家可能已经移动了几个 tick
+2. 子服插件崩了锁就失效，安全依赖于子服的稳定性
+3. 每个子服都要装插件，多子服架构下维护成本高
+4. 子服需要配合，登录提示需要子服发 title/message
 
 ### 新目标
 
@@ -145,13 +145,13 @@ private static boolean isWhitelisted(PacketTypeCommon type) {
 
 为什么 `CHUNK_BATCH_ACK` 必须放行？
 
-区块数据是服务端主动推给客户端的。如果我们不放行 `CHUNK_BATCH_ACK`，服务端会认为客户端没有收到区块，可能导致连接超时断开。而且——我们不想阻止区块加载，玩家应该能看到正常的世界，只是不能动。这比显示一个空白屏幕体验好得多。
+区块数据是服务端主动推给客户端的。如果我们不放行 `CHUNK_BATCH_ACK`，服务端会认为客户端没有收到区块，可能导致连接超时断开。而且我们不想阻止区块加载：玩家应该能看到正常的世界，只是不能动。这比显示一个空白屏幕体验好得多。
 
 ## 关键实现细节
 
 ### 锁定坐标的捕获
 
-玩家进服时我们还没有坐标信息。坐标从哪里来？——第一个 Position 包。
+玩家进服时我们还没有坐标信息。坐标从哪里来？来自第一个 Position 包。
 
 ```java
 private void tryCapturePosition(PacketReceiveEvent event, String name,
@@ -176,7 +176,7 @@ private void tryCapturePosition(PacketReceiveEvent event, String name,
 }
 ```
 
-只取一次——后续所有移动包都拦截，然后发一个 Position 包把玩家拉回这个坐标。
+坐标只取一次，后续所有移动包都拦截，然后发一个 Position 包把玩家拉回这个坐标。
 
 ### 发送锁定位置包
 
@@ -253,7 +253,7 @@ public class VelocityBridge {
 }
 ```
 
-这就是依赖倒置——高层模块不依赖低层模块，都依赖抽象。
+这就是依赖倒置：高层模块不依赖低层模块，都依赖抽象。
 
 ### AuthAdapter 替换
 

@@ -5,7 +5,7 @@ tags: [RAG, Agent, Vue3, Obsidian, 架构]
 categories: [AI 应用]
 ---
 
-上一篇 [没有 embedding 也能做 RAG](/2026/06/13/2026-06-13-没有embedding模型也能做rag-但rag解决不了安全/) 讲的是「检索」怎么实现。这篇往前挪一步，聊一个更早、也更容易被忽略的决定：知识到底存成什么。大多数人一上来就是「建张表」或者「灌进向量库」，我最后选了个反直觉的答案——知识库就是磁盘上一个 Markdown 文件夹，一个能直接用 Obsidian 打开的 vault。然后我在浏览器里把 Obsidian 的双链、反链、关系图又复刻了一遍。
+上一篇 [没有 embedding 也能做 RAG](/2026/06/13/rag-without-embedding-and-not-security/) 讲的是「检索」怎么实现。这篇往前挪一步，聊一个更早、也更容易被忽略的决定：知识到底存成什么。大多数人一上来就是「建张表」或者「灌进向量库」，我最后选了个反直觉的答案——知识库就是磁盘上一个 Markdown 文件夹，一个能直接用 Obsidian 打开的 vault。然后我在浏览器里把 Obsidian 的双链、反链、关系图又复刻了一遍。
 
 <!-- more -->
 
@@ -33,7 +33,7 @@ val folder = id.substringBeforeLast('/', "")           // 如 规则/pvp
 
 用相对路径当 id 有个好处：不同子目录下的同名文件不会撞 id，移动/改名也有稳定锚点。
 
-## 两层：你的知识 vs 别人的事实
+## 知识分两层：可写 vault 和只读参考库
 
 很快出现第二个问题。有些内容不该落进服主的 vault——比如插件自己的使用手册、CMI 这类官方文档。它们是「别人的事实」，该随插件版本更新，不该被服主误改，也不该混进他「自己的知识」里。
 
@@ -52,7 +52,7 @@ store = KeywordKnowledgeStore(entries + reference.entries)
 // 但 metadata() 只回 vault（可编辑那部分）
 ```
 
-这行 `entries + reference.entries` 是整个分层的枢纽：检索面是并集，编辑面是子集。
+整个分层其实就体现在这一行 `entries + reference.entries` 上：检索面是并集，编辑面是子集。
 
 ## 在浏览器里复刻 Obsidian
 
@@ -72,7 +72,7 @@ const backlinks = computed(() =>
 
 递归目录树：磁盘上的 folder 是 `活动/2026` 这种斜杠路径，前端把它 split 成真·文件夹树，折叠状态存 `localStorage`。搜索时强制全展开，否则尊重用户折叠。
 
-## 补上最后一块：只读层「可见但不可编辑」
+## 给只读库一个前端出口
 
 分层的设计里有个洞我最近才补上。前端列表接口 `/api/kb` 一直只回 vault 的元数据——这意味着只读参考库对 Agent 可见、对前端完全隐形。用户问「怎么前端没显示我们的内置知识库」，我才发现前端压根没有承载它的地方。
 
@@ -89,7 +89,7 @@ const refIds = computed(() => new Set(refEntries.value.map((e) => e.id)))
 const selectedReadonly = computed(() => !!selected.value && refIds.value.has(selected.value.id))
 ```
 
-这才让「两层」在 UI 上真正落地：一棵可编辑的 vault 树，一棵只读的内置树，泾渭分明。
+这样「两层」才算在 UI 上落实：一棵可编辑的 vault 树，一棵只读的内置树。
 
 ## 两个顺带的数据流决定
 
