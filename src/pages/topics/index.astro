@@ -2,24 +2,62 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { allPosts, dateText, postUrl } from '../../lib/posts';
 const posts = await allPosts();
-const byId = (ids: string[]) => ids.map((id) => posts.find((post) => post.id === id)).filter((post) => post !== undefined);
+const known = new Set(posts.map((post) => post.id));
+const byId = (ids: string[]) => {
+  const unknown = ids.filter((id) => !known.has(id));
+  if (unknown.length) throw new Error(`topics 引用了不存在的文章 ID: ${unknown.join(', ')}`);
+  return ids.map((id) => posts.find((post) => post.id === id)!);
+};
+// 标签驱动的专题：打了对应标签的文章自动进来，按时间正序排成阅读路径
+const byTag = (tag: string) => posts
+  .filter((post) => post.data.tags?.includes(tag))
+  .sort((a, b) => dateText(a).localeCompare(dateText(b)));
+const reversePosts = [...byTag('逆向工程'), ...byId(['2026-10-19-当生活数据进入agent-我如何处理个人隐私'])];
 const tracks = [
   {
-    id: 'windyagent', number: '01', title: 'WindyAgent', subtitle: '从功能生长，到追问边界',
+    id: 'reverse', title: '逆向校园软件', subtitle: '从抓包到插件，把平台一个个啃下来',
+    intro: '点餐、校园卡、学习通、图书馆、教务、智慧树，外加一次小米 BootLoader 的碰壁。每篇都从抓包讲起，到请求伪造、协议还原为止，配套的隐私处理单独收尾。',
+    posts: reversePosts,
+  },
+  {
+    id: 'windyagent', title: 'WindyAgent', subtitle: '从功能生长，到追问边界',
     intro: '沿着这些文章，可以看到工具、记忆和护栏如何逐渐成形，也看到关于通用运行时的新疑问。',
-    posts: byId(['llm-vs-deterministic', 'guardrails-for-acting-agent', 'stealing-from-hermes-agent', 'agent-latency-fake-async', 'groovy-to-kether-migration', 'windyagent-from-framework-to-application']),
+    posts: byId([
+      '2026-06-13-做ai运维agent-什么活该让llm干-什么活别让它碰',
+      '2026-06-13-给会动手的aiagent上护栏-来源分权-人工审批-提示注入',
+      '2026-06-18-从hermesagent偷了10个设计-aiagent功能增强实战',
+      '2026-06-21-一句-你好-要等三次llm-我从hermes偷来的功能-反手把agent拖慢了',
+      '2026-06-15-给aiagent加技能-我偏偏不让它现场写代码',
+      '2026-06-15-别人的agent技能都用python-我的偏用groovy-这才是关键',
+      '2026-07-15-我把agent技能从groovy换成了kether-不是打脸-是同一条路走到底',
+      '2026-10-04-windyagent的下一步思考-借助javaharness做minecraftagent应用',
+    ]),
   },
   {
-    id: 'engineering', number: '02', title: '工程与服务端', subtitle: '让系统经得起真实运行',
+    id: 'engineering', title: '工程与服务端', subtitle: '让系统经得起真实运行',
     intro: '构建、类加载、跨服通信和线程约束。问题总在系统真正运行时浮现，这里记下它们的来龙去脉。',
-    posts: byId(['gradle-jvm-vs-toolchain', 'velocity-plugin-fatjar', 'jackson-classloader-conflict', 'hybrid-server-mainthread-and-scheduler', 'stale-online-capability-vs-liveness', 'why-not-mcp-per-subserver']),
+    posts: byId([
+      '2026-06-11-gradle的两个jdk-gradlejvm和toolchain到底有什么区别',
+      '2026-06-11-为什么velocity插件必须打fatjar-插件类加载与依赖隔离',
+      '2026-06-11-为什么java11装不了java25编译的插件-一次跨平台插件的字节码版本踩坑',
+      '2026-06-13-我在fatjar那篇里警告过的jackson冲突-今天真的炸了',
+      '2026-06-13-mohist系混合服务端的两个深坑-被冻结的主线程-和不触发的调度器',
+      '2026-06-14--假在线-它有这个能力-不等于它现在还连着',
+      '2026-07-12-为什么我不把子服做成mcpserver-拓扑-信任与暴露面的取舍',
+    ]),
   },
   {
-    id: 'exploration', number: '03', title: '其他探索', subtitle: '走出熟悉的工程现场',
-    intro: '比赛、逆向与复盘。换一条路走，仍然要验证、记下意外，也承认判断曾经改变。',
-    posts: byId(['2026-09-26-reverse-engineering-gruangroun-xiaoer', '2026-09-26-xiaomi-hyperos-bl-unlock-failure', '2026-10-03-gosim-survey26-hackathon-prep-retro']),
+    id: 'tinkering', title: '折腾与复盘', subtitle: '桌面、容器和一次黑客松',
+    intro: '换系统、算容器账、复盘比赛。这些事和写代码一样，动手之前都先想清楚要什么。',
+    posts: byId([
+      '2026-10-27-一切透明的都在卡-我的gnome卡顿批判书-以及我对omarchy的期待',
+      '2026-10-31-omarchy-换血实录-从批判者到补丁匠',
+      '2026-11-01-一个人维护的rust系统-是怎么迭代起来的',
+      '2026-11-04-一个rust应用-二十七个容器',
+      '2026-11-04-gosim巡天智能体黑客松全程复盘-从本地4223到线上30091',
+    ]),
   },
-];
+].map((track, i) => ({ ...track, number: String(i + 1).padStart(2, '0') }));
 ---
 <BaseLayout title="阅读专题" current="/topics/">
   <section class="page-head shell"><span class="eyebrow"><span class="eyebrow-line"></span> READING PATHS</span><h1>从这里开始读</h1><p>从一篇到下一篇，沿着同一个问题的来路走。这里收着几条有起点、有转折，也仍在继续的阅读路径。</p></section>
