@@ -11,7 +11,7 @@ NousResearch 的 [hermes-agent](https://github.com/NousResearch/hermes-agent) �
 
 <!-- more -->
 
-## 1. 上下文压缩：别直接截断
+## 上下文压缩：用 LLM 摘要旧消息
 
 我们原来的 `trimHistory()` 直接删最旧的消息。对话超过 20 轮后，早期的重要上下文（玩家名、操作结果、约定）全丢了。
 
@@ -51,7 +51,7 @@ class ContextCompressor(
 
 关键设计：摘要放在 user 消息里而非 system prompt。这样 system prompt + 工具定义保持稳定，可被 LLM provider 的前缀缓存命中（省 token）。
 
-## 2. 工具结果缓存：别重复调
+## 工具结果缓存
 
 LLM 在多轮对话中可能重复请求同一个查询（连续查同一玩家余额）。缓存避免浪费：
 
@@ -70,7 +70,7 @@ class ToolResultCache(maxSize: Int = 128, ttlMs: Long = 300_000) {
 
 用 SHA-256 做 key，避免大 JSON 字符串占用内存。
 
-## 3. 失败模式检测：别让 Agent 死循环
+## 失败模式检测
 
 Agent 调同一个工具 3 次相同参数 = 循环。连续 4 次失败 = 反复失败。单工具累计 15+ 次 = 失控。
 
@@ -85,7 +85,7 @@ class FailureDetector {
 }
 ```
 
-## 4. 成本感知路由：简单问题别用贵模型
+## 成本感知路由
 
 Hermes 用 Nous Portal 做模型路由。我们的做法更简单——在 LLMProvider 层加一个 CostRouter 装饰器：
 
@@ -104,7 +104,7 @@ class CostRouter(
 
 复杂度评分：长度 + 多步信号 + 编号步骤 + 工具数量 + 代码关键词。闲聊/简单查询走便宜模型，复杂推理走贵模型。
 
-## 5. 用户画像：记住玩家偏好
+## 用户画像
 
 Hermes 用 Honcho 做辩证式用户建模。我们用更轻量的方案——每次对话后异步用 LLM 提取关键信息：
 
@@ -119,9 +119,9 @@ data class UserProfile(
 )
 ```
 
-下次对话时画像拼入 userMessage，让 Agent 更懂用户。
+下次对话时把画像拼进 userMessage。
 
-## 6. FTS5 历史搜索
+## FTS5 历史搜索
 
 长期记忆只记"结论"，历史对话记"原文"。SQLite FTS5 全文检索让 Agent 能搜到过去的对话片段：
 
@@ -134,15 +134,15 @@ class SessionStore(dbPath: Path) {
 
 FTS5 不可用时降级为 LIKE 搜索。
 
-## 7. 训练数据轨迹
+## 训练数据轨迹
 
 记录每次 Agent 交互的完整轨迹（输入→工具调用→结果→输出），可导出为 SFT 微调格式。这是 Hermes 的 `batch_runner` 思路——用生产数据训练更好的工具调用模型。
 
-## 8. 自我检查
+## 自我检查
 
 Agent 回复前自动检查：是否泄露内部信息（API key、堆栈）、是否有幻觉（引用不存在的工具/玩家）。规则检查零 LLM 成本，深度检查用便宜模型。
 
-## 9. 记忆整合
+## 记忆整合
 
 长期记忆只增不删会越来越臃肿。定期用 LLM 合并语义重复的记忆：
 
@@ -154,7 +154,7 @@ class MemoryConsolidator(memory: FileLongTermMemory, llm: LLMProvider) {
 }
 ```
 
-## 10. Prompt 版本化
+## Prompt 版本化
 
 SystemPrompt 不硬编码，存文件，支持版本历史。改 prompt 不用重启，旧版本可回滚。
 

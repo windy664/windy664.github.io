@@ -17,7 +17,7 @@ categories: [工程化]
 java.lang.NoClassDefFoundError: okhttp3/OkHttpClient
 ```
 
-编译期能找到、运行期找不到——这是典型的「依赖没被打进产物」。
+编译期能找到、运行期找不到，这是典型的「依赖没被打进产物」。
 
 ## 根因：Velocity 不管你的第三方库
 
@@ -64,7 +64,7 @@ shadowJar {
 
 ## 类加载隔离：为什么要 relocate
 
-Velocity 给每个插件一个独立的 PluginClassLoader。这带来一个隐患：如果两个插件都 shade 了 Jackson，但版本不同，各自的 classloader 加载各自的版本——大多时候没事，但一旦涉及平台自带库的版本冲突就会爆。
+Velocity 给每个插件一个独立的 PluginClassLoader。这带来一个隐患：如果两个插件都 shade 了 Jackson，但版本不同，各自的 classloader 加载各自的版本，大多时候没事，但一旦涉及平台自带库的版本冲突就会爆。
 
 典型场景：Velocity 自带了某版本的 gson/guava，你的依赖又传递引入了另一个版本并 shade 进来，运行时就可能 `NoSuchMethodError`。
 
@@ -77,7 +77,7 @@ shadowJar {
 }
 ```
 
-这样你的 `org.windy.windyagent.libs.jackson` 跟任何人的 `com.fasterxml.jackson` 都不会撞车。代价是 JAR 变大、构建变慢，但换来确定性——对要发给一堆陌生服主的插件来说，这个确定性很值。
+这样你的 `org.windy.windyagent.libs.jackson` 跟任何人的 `com.fasterxml.jackson` 都不会撞车。代价是 JAR 变大、构建变慢，但换来确定性。对要发给一堆陌生服主的插件来说，这个确定性很值。
 
 > 经验法则：只 relocate 那些容易和平台/其他插件冲突的通用库（json、http、日志门面等）。冷门、专用的库一般不必。
 
@@ -88,6 +88,6 @@ shadowJar {
 - `minimize()`：shadow 做 tree-shaking，删掉没被引用到的 class（但对反射加载的库要小心，可能误删）
 - 把可选 Provider 拆成独立产物，按需分发
 
-## 写在最后
+## 总结
 
 fat jar 不是什么高级技巧，而是 Velocity 的依赖模型逼出来的必选项。真正要理解的就一句话：谁负责提供运行时依赖。平台提供的用 `compileOnly`，平台不管的自己 shade。想通这点，`NoClassDefFoundError` 也好、版本冲突也好，基本都能提前预判，而不是等服主报错了才回头查。

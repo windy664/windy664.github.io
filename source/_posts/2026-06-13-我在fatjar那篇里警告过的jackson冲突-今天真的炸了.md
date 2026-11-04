@@ -9,7 +9,7 @@ categories: [工程化]
 
 <!-- more -->
 
-## 现象：内部类找不到，每两秒刷一次
+## 内部类找不到，每两秒刷一次
 
 把 Velocity 端和 Bukkit 端合并成一个通用 jar 之后，子服一连上中枢，VC 控制台就开始刷：
 
@@ -24,7 +24,7 @@ java.lang.NoClassDefFoundError:
 
 socket 总线每次序列化消息都走 Jackson，于是每两秒一次。注意一个细节：报错的不是 Jackson 主类，而是一个内部类 `PrivateMaxEntriesMap$WriteThroughEntry`——外层类明明加载成功了（整条调用链都在跑），偏偏这个内部类找不到。
 
-## 诊断：排除两个最容易想到的原因
+## 先排除两个最容易想到的原因
 
 会不会是 shadow 没把这个类打进 jar？解开 jar 翻：
 
@@ -44,7 +44,7 @@ jackson-databind / core / annotations / module-kotlin … 全是 2.18.2
 
 两个常规原因都排除了，那答案只剩一个：类加载器层面的劈叉——外层类从一份 Jackson 加载，解析内部类时却跑到了另一份没有这个内部类的 Jackson 里。
 
-## 真凶：我不是 classpath 上唯一的 Jackson
+## classpath 上不止一份 Jackson
 
 这台 VC 上还装着 TabooLib，Velocity 本身也带 Jackson。同一个 `com.fasterxml.jackson` 包，在不同插件的类加载器之间产生了版本劈叉：我的代码触发加载时，外层类和内部类没落在同一份 Jackson 上，链接就断了。
 
@@ -60,7 +60,7 @@ jackson-databind / core / annotations / module-kotlin … 全是 2.18.2
 
 因为我把两端合进一个 jar，类加载器的图变了。同样一份 Jackson 2.18.2，在新的加载结构里，恰好触发了那个本就潜伏的冲突。这也是这类 bug 最坑的地方：它不是「改错了」，是「环境变了，惊动了原本睡着的雷」。所以我没在「为什么现在才炸」上耗太久——根治方案跟触发时机无关。
 
-## 修复：relocate 隔离
+## 用 relocate 隔离
 
 ```groovy
 shadowJar {
@@ -78,7 +78,7 @@ com/fasterxml/jackson/...     ✗ 没了（全被改名）
 
 一个动手前必查的坑：relocate 改的是字节码里的类引用，改不了字符串。如果代码里有 `Class.forName("com.fasterxml.jackson...")` 这种按字符串硬加载的，relocate 之后会找不到类。所以重定位前先全局搜一遍，确认没有字符串硬引用（我这边都是正常 import + 方法调用，安全）。
 
-## 写在最后
+## 什么时候必须 relocate
 
 上一篇我把 relocate 当成一种「洁癖」，可做可不做。今天的教训是：当你要把东西发给一堆陌生环境——别人的服、一堆你没听过的插件——你根本控制不了 classpath 上还躺着谁。
 

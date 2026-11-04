@@ -51,7 +51,7 @@ java {
 # 这是 Gradle JVM，选一个 ≥17 的 JDK（我选 Zulu 21）
 ```
 
-## Toolchain 的妙处：声明式、自动下载
+## Toolchain 是声明式的，还能自动下载
 
 老式做法是 `sourceCompatibility` / `targetCompatibility`，它们只是给 `javac` 传 `-source`/`-target`，前提是你机器上得有那个 JDK，否则交叉编译各种坑。
 
@@ -93,4 +93,4 @@ Gradle 自身是 Java 写的，每个 Gradle 版本对运行它的 JDK 有最低
 
 灶台再高级，也不妨碍你用小火慢炖一道 Java 11 的菜。
 
-分清这两个 JDK 之后，那句「无效的 Gradle JDK 配置」就再也不会让我手忙脚乱——它说的永远是灶台（Gradle JVM），跟我项目要的火候（toolchain）没关系。下次再有人卡在「我项目是 Java 11，为什么 Gradle 不让我把 JDK 设成 11」，我大概知道该从哪句话开始解释了。
+分清这两个 JDK 之后，那句「无效的 Gradle JDK 配置」就再也不会让我手忙脚乱——它说的永远是灶台（Gradle JVM），跟我项目要的火候（toolchain）没关系。

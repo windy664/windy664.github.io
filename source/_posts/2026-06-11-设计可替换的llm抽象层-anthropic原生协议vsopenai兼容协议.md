@@ -109,7 +109,7 @@ fun run(context: AgentContext): AgentResponse {
 
 一个落地小细节：Kotlin 的 `when` 分支引用 `ClaudeProvider` 时，类是惰性加载的——只要用户配的是 openai，`anthropic-java` SDK 的类压根不会被加载。所以哪怕 SDK 较重，也不拖累只用国产模型的用户。
 
-## 写在最后
+## 抽象的回报与成本
 
 做完这层抽象，最直接的回报是后来接 mimo、接 Ollama，没碰过 Agent 主循环一行代码，加个 Provider、改行配置就完事。
 
