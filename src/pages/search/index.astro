@@ -33,6 +33,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       }
     }
     input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => run(), 180); });
+    loadPagefind().catch(() => {});
     document.addEventListener('keydown', (event) => { if (event.key === '/' && document.activeElement !== input) { event.preventDefault(); input.focus(); } });
     const initial = new URLSearchParams(location.search).get('q');
     if (initial) { input.value = initial; run(); }
