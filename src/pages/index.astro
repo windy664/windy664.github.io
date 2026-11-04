@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PostCard from '../components/PostCard.astro';
 import { allPosts, categories, categoryUrl, postUrl } from '../lib/posts';
+import { topicTracks } from '../lib/topics';
 
 const posts = await allPosts();
 const featured = posts[0];
@@ -14,7 +15,7 @@ const mainCategories = categories(posts).slice(0, 5);
       <span class="eyebrow"><span class="eyebrow-line"></span> Torine · 沿途札记</span>
       <h1>逝者如斯，<br /><em>而未尝往也。</em></h1>
       <div class="hero-source">—— 苏轼<a href="https://zh.wikisource.org/zh-hans/%E5%89%8D%E8%B5%A4%E5%A3%81%E8%B3%A6" target="_blank" rel="noopener noreferrer">《前赤壁赋》↗</a></div>
-      <p>有些问题，要动手之后才看得清；有些答案，要走过弯路才写得出。这里留着过程，也留着尚未定论的思考。</p>
+      <p>答案多半是走着走着捡到的，写下来，好让下一次少绕点路。</p>
       <div class="hero-actions"><a class="button button-primary" href="/topics/">沿专题阅读 <span>↗</span></a><a class="button button-secondary" href="/archives/">翻阅全部文章 <span>→</span></a></div>
     <div class="hero-stat"><strong>{posts.length}</strong><span>篇文章，故事仍在继续</span></div>
     </div>
@@ -34,9 +35,7 @@ const mainCategories = categories(posts).slice(0, 5);
   <section class="home-section shell explore-section">
     <div class="section-heading"><div><span class="section-index">03 / EXPLORE</span><h2>循着线索走</h2></div><a href="/topics/" class="section-more">阅读路线 ↗</a></div>
     <div class="topic-teasers">
-      <a href="/topics/#windyagent"><span>01 / LONG RUNNING</span><h3>WindyAgent</h3><p>记录功能如何生长，也追问 Agent 能力的边界。</p><b>阅读专题 →</b></a>
-      <a href="/topics/#engineering"><span>02 / BUILDING</span><h3>工程与服务端</h3><p>顺着 Velocity、JVM 与跨服通信的线索，回到问题发生的现场。</p><b>阅读专题 →</b></a>
-      <a href="/topics/#exploration"><span>03 / EXPLORING</span><h3>其他探索</h3><p>比赛、逆向与复盘；有些弯路，也值得留下路标。</p><b>阅读专题 →</b></a>
+      {topicTracks(posts).slice(0, 3).map((track) => <a href={`/topics/#${track.id}`}><span>{track.number} / {track.label}</span><h3>{track.title}</h3><p>{track.subtitle}</p><b>阅读专题 →</b></a>)}
     </div>
     <div class="category-strip"><span>也可以按分类寻路</span>{mainCategories.map((item) => <a href={categoryUrl(item.name)}>{item.name}<small>{item.count}</small></a>)}</div>
   </section>
