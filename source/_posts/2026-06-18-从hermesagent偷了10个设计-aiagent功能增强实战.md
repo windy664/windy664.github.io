@@ -1,6 +1,6 @@
 ---
 title: 从 Hermes Agent 偷了 10 个设计
-date: 2026-06-18 18:00:00
+date: 2026-09-18 12:45:00
 tags: [Agent, 架构, Hermes, 开源, 功能设计, WindyAgent]
 categories: [AI 应用]
 ---

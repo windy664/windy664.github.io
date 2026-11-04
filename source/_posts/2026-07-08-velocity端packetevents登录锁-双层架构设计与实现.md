@@ -1,6 +1,6 @@
 ---
 title: 用 packetevents 在 Velocity 端做登录锁
-date: 2026-07-08
+date: 2026-10-14 03:22:00
 tags: [Minecraft, Velocity, packetevents, 网络编程, 架构设计]
 categories: [工程化]
 ---

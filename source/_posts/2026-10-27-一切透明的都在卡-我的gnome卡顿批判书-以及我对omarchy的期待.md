@@ -1,6 +1,6 @@
 ---
 title: "给卡顿的 GNOME 写一份批判书"
-date: 2026-10-27 22:57:43
+date: 2026-11-24 15:49:00
 draft: false
 categories: [踩坑]
 tags: [Linux, GNOME, Omarchy, 折腾, 折腾]
