@@ -5,7 +5,7 @@ tags: [Agent, Groovy, Kether, TabooLib, 安全, DSL, Minecraft]
 categories: [AI 应用]
 ---
 
-一个月前我写了篇[《别人的 Agent 技能都用 Python，我的偏用 Groovy》](/2026/06/15/groovy-not-python-agent-skills/)，核心论点是：执行器该选宿主的母语。宿主在 JVM 上，技能也该在 JVM 上，Groovy 让你零距离拿到活的 Server 对象，零 IPC、零桥接。
+一个月前我写了篇[《别人的 Agent 技能都用 Python，我的偏用 Groovy》](/2026/06/15/2026-06-15-别人的agent技能都用python-我的偏用groovy-这才是关键/)，核心论点是：执行器该选宿主的母语。宿主在 JVM 上，技能也该在 JVM 上，Groovy 让你零距离拿到活的 Server 对象，零 IPC、零桥接。
 
 一个月后我把 Groovy 换掉了。换成了 [TabooLib](https://github.com/TabooLib/taboolib) 的 Kether——一个受限的 DSL 脚本引擎。
 
