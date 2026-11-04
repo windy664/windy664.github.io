@@ -10,6 +10,8 @@ tags:
 categories:
   - 踩坑
 description: 点击 dock 图标自动收回抽屉这个小功能，做出来却时灵时不灵。排查一路从日志被自己删掉，查到 hyprctl binds 里一个从没主动要过的 release flag，最后 29 次点击 29 次命中收尾。
+topics:
+  - tinkering
 ---
 
 我的桌面上有一个「抽屉」：按 Super+S 呼出一个 special workspace（`special:scratchpad`），里面塞着 QQ、Spotify 这类常驻但不想占工作区的窗口，再按一次收回去。上一篇文章结尾提过 dock 会把这个抽屉掏空，那是 dock 的最小化逻辑误伤，修完之后我又盯上了另一个不顺手的地方：抽屉开着的时候，点一下抽屉外面的任何地方，它应该自己收回去，就像 macOS 上点开一个菜单再点别处菜单自动收起。翻遍 Omarchy 的设置，没有这个功能，于是我决定自己写一个，顺便开源成了 [dock-minimize-rs](https://github.com/windy664/dock-minimize-rs)。

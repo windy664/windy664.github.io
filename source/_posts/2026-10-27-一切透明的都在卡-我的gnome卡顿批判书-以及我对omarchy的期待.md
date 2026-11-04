@@ -5,6 +5,8 @@ draft: false
 categories: [踩坑]
 tags: [Linux, GNOME, Omarchy, 折腾]
 description: 一台 i7-1185G7 + 32GB 内存 + 4K 屏的笔记本，被 GNOME 的半透明效果拖成了 PPT。这篇批判书逐一列罪状、晒自救病历，最后把希望寄托给 Omarchy 4。
+topics:
+  - tinkering
 ---
 
 # 一切透明的都在卡：我的 GNOME 卡顿批判书，以及我对 Omarchy 的期待

@@ -3,6 +3,8 @@ title: 别人的 Agent 技能用 Python，我的偏用 Groovy
 date: 2026-06-15 22:00:00
 tags: [Agent, LLM, 技能, Groovy, JVM, 创新]
 categories: [AI 应用]
+topics:
+  - windyagent
 ---
 
 聊 Agent「技能」（skill / tool）的文章，几乎默认一件事：技能 = 一段 Python。Anthropic 的 Agent Skills、各家的 code interpreter、一堆开源 Agent 框架——背后都是「在一个沙箱化的 Python 运行时里跑脚本」。

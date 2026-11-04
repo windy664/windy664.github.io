@@ -3,6 +3,8 @@ title: 从 Hermes 抄来的功能，把我的 Agent 拖慢了
 date: 2026-06-21 17:30:00
 tags: [Agent, 性能优化, 架构反思, 工程反思]
 categories: [AI 应用]
+topics:
+  - windyagent
 ---
 
 三天前我写了篇[《从 Hermes Agent 偷了 10 个设计》](/2026/06/18/2026-06-18-从hermesagent偷了10个设计-aiagent功能增强实战/)，把上下文压缩、用户画像、子任务并行、成本路由一股脑搬进了自己的 MC 服务器管理 Agent。当时挺得意。

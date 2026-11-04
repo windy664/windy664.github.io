@@ -3,6 +3,8 @@ title: 为什么我不把子服做成 MCP Server
 date: 2026-07-12 21:40:00
 tags: [Agent, MCP, 架构, 分布式, Minecraft, 工程反思]
 categories: [架构]
+topics:
+  - engineering
 ---
 
 MCP（Model Context Protocol）火了之后，几乎每隔一段时间就有人问我同一个问题：「你那个 Minecraft 运维 Agent，中心大脑要控制一堆子服，为什么不把每个子服都做成一个 MCP Server？中心当 MCP Client 一连，工具自动发现、协议还标准，多干净？」
