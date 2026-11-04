@@ -10,19 +10,31 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     const container = document.querySelector('#search-results');
     const esc = (value) => String(value).replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
     let timer;
-    async function run() {
+    let pagefindPromise = null;
+    // 每次部署 pagefind 分片哈希都会变，浏览器缓存的旧 entry.json 会指向已删除的分片；
+    // 失败时带时间戳重新 import，绕过缓存拿到新索引
+    const loadPagefind = (bust) => {
+      if (!pagefindPromise || bust) pagefindPromise = import('/pagefind/pagefind.js' + (bust ? '?r=' + Date.now() : ''));
+      return pagefindPromise;
+    };
+    async function run(bust) {
       const query = input.value.trim();
       if (!query) { status.textContent = '输入关键词开始搜索。'; container.innerHTML = ''; return; }
       status.textContent = '正在搜索…';
       try {
-        const pagefind = await import('/pagefind/pagefind.js');
+        const pagefind = await loadPagefind(bust);
         const result = await pagefind.search(query);
         const items = await Promise.all(result.results.slice(0, 30).map((item) => item.data()));
         status.textContent = `找到 ${result.results.length} 条结果${result.results.length > 30 ? '，显示前 30 条' : ''}。`;
-        container.innerHTML = items.map((item) => `<a class="search-result" href="${esc(item.url)}"><strong>${esc(item.meta.title)}</strong><p>${esc(item.plain_excerpt || '')}</p><span>阅读文章 ↗</span></a>`).join('');
-      } catch { status.textContent = '搜索索引暂时不可用，请稍后重试。'; }
+        container.innerHTML = items.map((item) => `<a class="search-result" href="${esc(item.url)}"><strong>${esc(item.meta?.title || item.url)}</strong><p>${item.excerpt || ''}</p><span>阅读文章 ↗</span></a>`).join('');
+      } catch {
+        if (!bust) { status.textContent = '搜索索引更新中…'; return run(true); }
+        status.textContent = '搜索索引暂时不可用，请稍后重试。';
+      }
     }
-    input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 180); });
+    input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => run(), 180); });
     document.addEventListener('keydown', (event) => { if (event.key === '/' && document.activeElement !== input) { event.preventDefault(); input.focus(); } });
+    const initial = new URLSearchParams(location.search).get('q');
+    if (initial) { input.value = initial; run(); }
   </script>
 </BaseLayout>
