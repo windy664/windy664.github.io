@@ -1,7 +1,7 @@
 ---
 title: Hello World
 date: 2026-06-11
-tags: [折腾, 博客]
+tags: [折腾, 博客, 折腾]
 categories: [思考]
 ---
 
