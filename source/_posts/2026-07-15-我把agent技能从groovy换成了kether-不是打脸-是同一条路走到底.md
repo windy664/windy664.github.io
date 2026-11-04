@@ -5,7 +5,7 @@ tags: [Agent, Groovy, Kether, TabooLib, 安全, DSL, Minecraft]
 categories: [AI 应用]
 ---
 
-一个月前我写了篇[《别人的 Agent 技能都用 Python，我的偏用 Groovy》](/2026/06/15/2026-06-15-别人的agent技能都用python-我的偏用groovy-这才是关键/)，核心论点是：执行器该选宿主的母语——宿主在 JVM 上，技能也该在 JVM 上，Groovy 让你零距离拿到活的 Server 对象，零 IPC、零桥接。
+一个月前我写了篇[《别人的 Agent 技能都用 Python，我的偏用 Groovy》](/2026/06/15/groovy-not-python-agent-skills/)，核心论点是：执行器该选宿主的母语。宿主在 JVM 上，技能也该在 JVM 上，Groovy 让你零距离拿到活的 Server 对象，零 IPC、零桥接。
 
 一个月后我把 Groovy 换掉了。换成了 [TabooLib](https://github.com/TabooLib/taboolib) 的 Kether——一个受限的 DSL 脚本引擎。
 
@@ -17,7 +17,7 @@ categories: [AI 应用]
 
 上一篇写"代价是放弃沙箱"的时候，我其实已经知道这是个问题，但心态是"能接受"。跑了几个礼拜之后，我发现"能接受"和"做得好"之间差了整整一个量级。
 
-### 坑一：有人真写了 System.exit(0)
+### 有人真写了 System.exit(0)
 
 不是假设场景。一个服主在技能里写了：
 
@@ -26,9 +26,9 @@ categories: [AI 应用]
 System.exit(0)
 ```
 
-服务器直接挂了。没有优雅退出，没有保存数据，就是一个 `kill`。当然这是服主自己写的，怪不到框架——但问题在于，框架居然允许这种事发生。一个"技能"能把整个进程杀掉，这在任何正常的安全模型里都不该是可接受的。
+服务器直接挂了。没有优雅退出，没有保存数据，就是一个 `kill`。当然这是服主自己写的，怪不到框架，但问题在于，框架居然允许这种事发生。一个"技能"能把整个进程杀掉，这在任何正常的安全模型里都不该是可接受的。
 
-### 坑二：Thread.sleep 卡死主线程
+### Thread.sleep 卡死主线程
 
 Bukkit API 是非线程安全的，所以我让技能在主线程跑。有人写了：
 
@@ -36,15 +36,15 @@ Bukkit API 是非线程安全的，所以我让技能在主线程跑。有人写
 Thread.sleep(30000)  // "等30秒再发奖励"
 ```
 
-主线程冻结 30 秒。TPS 直接掉到 0。看门狗能解除 Agent 这边的等待——但看门狗没法强杀一个正在主线程上空转的脚本。强行中断 Java 主线程？那等于崩服。上一篇写过这个局限，但当时我觉得"超时 + 提醒"够了。不够。
+主线程冻结 30 秒。TPS 直接掉到 0。看门狗能解除 Agent 这边的等待，但看门狗没法强杀一个正在主线程上空转的脚本。强行中断 Java 主线程？那等于崩服。上一篇写过这个局限，当时我觉得"超时 + 提醒"够用了，现在看不够。
 
-### 坑三："服主审过"在多人团队里不成立
+### "服主审过"在多人团队里不成立
 
-上一篇说信任边界是"服主写、亲自审"。但真实的服务器团队里，有 RCON 管理员、有子管理员、有"帮服主写技能的热心玩家"。谁审？审了谁？版本控制呢？一个 `.groovy` 文件改了一行 `Thread.sleep(0)` 变成 `Thread.sleep(600000)`——谁来发现？
+上一篇说信任边界是"服主写、亲自审"。但真实的服务器团队里，有 RCON 管理员、有子管理员、有"帮服主写技能的热心玩家"。谁审？审了谁？版本控制呢？一个 `.groovy` 文件改了一行 `Thread.sleep(0)` 变成 `Thread.sleep(600000)`，谁来发现？
 
-"人审过"作为最后一道防线，取决于人的纪律。而纪律不是工程手段。
+"人审过"作为最后一道防线，取决于人的纪律，而纪律不是工程手段能保证的。
 
-这些问题的共同指向是：上一篇的架构里，安全模型是外挂的——护栏、看门狗、审计日志，全都是"堵"的思路。真正该做的是把安全内化进执行器本身。
+这些问题的共同指向是：上一篇的架构里，安全模型是外挂的：护栏、看门狗、审计日志，全都是"堵"的思路。真正该做的是把安全内化进执行器本身。
 
 ## Kether：一个只能调已注册动作的 DSL
 
@@ -75,7 +75,7 @@ if * &eq true then tell "你是管理员" else tell "你不是"
 
 用一个比喻：Groovy 方案是给了你整栋大楼的钥匙，然后在几扇门上贴了"别进"的纸条；Kether 方案是只给你该进的那几间房的钥匙，其余的门你连钥匙都没有。
 
-## 安全模型的内化：从"外挂护栏"到"执行器自带"
+## 把安全内化进执行器
 
 上一篇的安全方案是这样的：
 
@@ -109,7 +109,7 @@ Kether 执行（dryRun / 真实执行） ← 只能调已注册 action
 审计日志 ← 保留
 ```
 
-看门狗不需要了——因为 Kether 里根本写不出能卡主线程的东西。`System.exit` 这类操作在语法层面就被排除了。安全不再依赖"外挂护栏 + 人审"，而是内化进了执行器的表达能力边界。
+看门狗不需要了，因为 Kether 里根本写不出能卡主线程的东西。`System.exit` 这类操作在语法层面就被排除了。安全不再依赖"外挂护栏 + 人审"，而是内化进了执行器的表达能力边界。
 
 更具体地说，这次迁移加了一个 `skill_validate` 的远程验证机制：
 
@@ -121,7 +121,7 @@ when (mode) {
 }
 ```
 
-Velocity 中心端（代理服务器）不能执行 Bukkit Kether——但可以通过 RPC 委托目标子服验证。这意味着技能在部署前就能被静态验证，而不是到了运行时才发现写错了。
+Velocity 中心端（代理服务器）不能执行 Bukkit Kether，但可以通过 RPC 委托目标子服验证。这意味着技能在部署前就能被静态验证，而不是到了运行时才发现写错了。
 
 上一篇我说"最后一道防线是人，不是代码"。现在我要修正这句话：最后一道防线可以是执行器的表达能力边界，人是倒数第二道。
 
@@ -142,7 +142,7 @@ compileOnly("io.izzel.taboolib:platform-bukkit:6.3.0-4bced1a")
 compileOnly("io.izzel.taboolib:minecraft-kether:6.3.0-4bced1a")
 ```
 
-注意是 `compileOnly`，不是 `shaded`（打包进去）。服务端必须已经装了 TabooLib，否则技能功能降级。这是一个有意的决定——我不想把 TabooLib 的 30KB 塞进 WindyAgent 的 fat jar，因为很多服务器本身就在用 TabooLib。
+注意是 `compileOnly`，不是 `shaded`（打包进去）。服务端必须已经装了 TabooLib，否则技能功能降级。这是一个有意的决定：我不想把 TabooLib 的 30KB 塞进 WindyAgent 的 fat jar，因为很多服务器本身就在用 TabooLib。
 
 ### 运行时检测 + 优雅降级
 
@@ -164,7 +164,7 @@ private fun isKetherRuntimeMissing(e: Throwable): Boolean {
 }
 ```
 
-走异常链，判断是不是 TabooLib 缺失导致的。是的话，打一条警告日志，返回 `null`——技能功能静默降级，服务器正常运行。
+走异常链，判断是不是 TabooLib 缺失导致的。是的话，打一条警告日志，返回 `null`，技能功能静默降级，服务器正常运行。
 
 ### 系统提示词更新
 
@@ -172,7 +172,7 @@ SystemPrompt.kt 里所有"Groovy"改成"Kether"。更重要的是加了一条：
 
 > Velocity 中心端不可执行 Bukkit Kether，必须用 validate_skill_on_server 委托目标子服验证。
 
-这是因为 Kether 需要 Bukkit API 环境才能编译和执行，而 Velocity 是代理端，没有 Bukkit 运行时。这条约束在 Groovy 时代也存在，但当时没显式写出来——现在 DSL 有编译步骤，必须走远程验证。
+这是因为 Kether 需要 Bukkit API 环境才能编译和执行，而 Velocity 是代理端，没有 Bukkit 运行时。这条约束在 Groovy 时代也存在，但当时没显式写出来。现在 DSL 有编译步骤，必须走远程验证。
 
 ### 脚本重写
 
@@ -193,7 +193,7 @@ def names = players | map name | join ", "
 tell &f"在线 &a${count} &f人：&a${names}"
 ```
 
-Kether 的写法更啰嗦，但每一步都是可验证的——`online-players`、`size`、`map`、`join` 全是注册好的 action，不会出意外。
+Kether 的写法更啰嗦，但每一步都是可验证的：`online-players`、`size`、`map`、`join` 全是注册好的 action，不会出意外。
 
 ## 代价和权衡
 
@@ -201,9 +201,9 @@ Kether 的写法更啰嗦，但每一步都是可验证的——`online-players`
 
 ### 表达力下降
 
-Kether 不是通用编程语言。复杂的集合操作、异常处理、多层嵌套逻辑——在 Groovy 里几行搞定的事，在 Kether 里可能写不出来，或者写出来可读性很差。
+Kether 不是通用编程语言。复杂的集合操作、异常处理、多层嵌套逻辑，在 Groovy 里几行搞定的事，在 Kether 里可能写不出来，或者写出来可读性很差。
 
-这意味着某些"高级技能"得退回 Java/Kotlin 侧实现，注册成自定义 action，再暴露给 Kether 调用。这比"直接在 Groovy 里写"多了一层——你需要在框架代码里新增一个 action 注册。
+这意味着某些"高级技能"得退回 Java/Kotlin 侧实现，注册成自定义 action，再暴露给 Kether 调用。这比"直接在 Groovy 里写"多了一层：你需要在框架代码里新增一个 action 注册。
 
 但反过来想：这层额外的摩擦恰好就是安全边界。每一个被暴露给 Kether 的 action，都是你显式决定"这个操作是安全的、可以被技能调用的"。这不是限制，这是受控的能力授予。
 
@@ -216,7 +216,7 @@ Kether 不是通用编程语言。复杂的集合操作、异常处理、多层�
 def econ = Class.forName("net.milkbowl.vault.economy.Economy")
 ```
 
-在 Kether 里这不可能了——没有 `Class.forName`。如果你想让技能调用 Vault 的经济 API，你得先在框架侧注册一个 `deposit` action：
+在 Kether 里这不可能了，没有 `Class.forName`。如果你想让技能调用 Vault 的经济 API，你得先在框架侧注册一个 `deposit` action：
 
 ```kotlin
 @KetherAction(["deposit"])
@@ -232,7 +232,7 @@ fun deposit(player: Player, amount: Double) {
 deposit player ${player} amount ${coins}
 ```
 
-多了一步注册，但这个 action 是类型安全的、可审计的、有前置检查的。而且注册只需要做一次——之后所有技能都能用。
+多了一步注册，但这个 action 是类型安全的、可审计的、有前置检查的。而且注册只需要做一次，之后所有技能都能用。
 
 ### TabooLib 依赖
 
@@ -251,13 +251,13 @@ deposit player ${player} amount ${coins}
 | 安全策略 | 人审 + 审计 | 信任边界在文件系统 | 执行器自带白名单 |
 | 代价 | 不能自动生成 | 没有沙箱 | 表达力下降 |
 
-每一步都是在同一个方向上推进：让安全从"外挂"变成"内建"，让信任从"假设"变成"结构"。
+这三步都在朝同一个方向走：安全从外挂变成内建，信任从对人的假设变成结构上的保证。
 
 ## 这条路不是唯一的
 
 最后想强调一点：这个迁移的前提是宿主在 JVM 上。
 
-如果 WindyAgent 管的不是 Minecraft Java 服务端，而是一个 Python 后端、一个 Go 微服务——那第二篇的论点（"执行器选宿主的母语"）依然成立，Groovy 的论证依然成立。Kether 不是通用解，它是"宿主是 JVM + 已有 TabooLib 生态"这个特定组合下的最优解。
+如果 WindyAgent 管的不是 Minecraft Java 服务端，而是一个 Python 后端、一个 Go 微服务，那第二篇的论点（"执行器选宿主的母语"）依然成立，Groovy 的论证依然成立。Kether 不是通用解，它是"宿主是 JVM + 已有 TabooLib 生态"这个特定组合下的最优解。
 
 但思路是通用的：技能的执行器不该是"什么都能做"的通用运行时，而应该是"恰好够用"的受限环境。恰好够用意味着：你需要的能力它有，你不需要的能力它压根没有。不是"能做但被拦住"，是"做不到"。
 
