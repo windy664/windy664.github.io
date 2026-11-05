@@ -1,6 +1,6 @@
 ---
 title: 上游歌词插件坏了没人修，我用 Rust 重写了 Omarchy 顶栏卡拉OK
-date: 2026-11-05 07:50:00
+date: 2026-11-08 10:20:00
 description: 给 Omarchy 顶栏重写卡拉OK歌词组件的复盘：Rust 后端多词源并发、QML 只管渲染，重点记录 v0.3.9 面板歌词整体消失那次 count=0 的取证排查。
 categories:
   - 技术分享
