@@ -353,7 +353,7 @@ cp target/release/lyricsd ~/.local/bin/
 omarchy plugin add https://github.com/windy664/omarchy-lyrics-rs --enable
 ```
 
-已知边界也照实说：karalyr 覆盖率≈0，占位等库长大；LRCLIB 词级未接入；Spotify 的随机/循环按钮只读；上游 quickshell 的 OpenSSL 段错误还在等上游修。面板长这样：3 行视窗，当前行钉在正中间，宽高都随内容自适配；原图在仓库 `docs/screenshots/`。
+面板长这样：3 行视窗，当前行钉在正中间，宽高都随内容自适配；原图在仓库 `docs/screenshots/`。
 
 ![歌词面板：3 行视窗居中当前行，下方是播放控制条](/posts/omarchy-lyrics-rs/panel.png)
 
