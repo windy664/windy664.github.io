@@ -15,6 +15,8 @@ tags:
 
 2026-10-28 我把主力机从 Ubuntu 26.04 (GNOME) 重装成 Omarchy 4.0.6（DHH 那个 Arch + Hyprland 发行版），同一天 Hyprland 0.57 发布。听歌主要用 Spotify 和网易云，我想要的效果很朴素：顶栏常驻当前歌曲的逐行同步歌词，点开还有逐词卡拉OK。
 
+![成品顶栏：歌名歌手封面之外，当前行的歌词常驻在栏上，逐词点亮](/posts/omarchy-lyrics-rs/bar.png)
+
 <!-- more -->
 
 Omarchy 插件生态里有现成的 omarchy-lyrics（Python 后端），我装了。结果顶栏小部件永远不渲染，而且没有任何报错日志。我提了 issue：`crmne/omarchy-lyrics#22`「Bar widget never renders on Omarchy 4.0.6 / Quickshell 0.3.2 (service appears unloaded, no errors logged)」，截至 2026-10-31 还是 OPEN，作者零回复；作者当天发的 v1.2.8 只修了专辑封面下载的安全问题，渲染 bug 一个字没碰。
@@ -351,4 +353,7 @@ cp target/release/lyricsd ~/.local/bin/
 omarchy plugin add https://github.com/windy664/omarchy-lyrics-rs --enable
 ```
 
-已知边界也照实说：karalyr 覆盖率≈0，占位等库长大；LRCLIB 词级未接入；Spotify 的随机/循环按钮只读；上游 quickshell 的 OpenSSL 段错误还在等上游修。顶栏和面板的成品截图在仓库 `docs/screenshots/bar.png` 与 `docs/screenshots/panel.png`。
+已知边界也照实说：karalyr 覆盖率≈0，占位等库长大；LRCLIB 词级未接入；Spotify 的随机/循环按钮只读；上游 quickshell 的 OpenSSL 段错误还在等上游修。面板长这样：3 行视窗，当前行钉在正中间，宽高都随内容自适配；原图在仓库 `docs/screenshots/`。
+
+![歌词面板：3 行视窗居中当前行，下方是播放控制条](/posts/omarchy-lyrics-rs/panel.png)
+
