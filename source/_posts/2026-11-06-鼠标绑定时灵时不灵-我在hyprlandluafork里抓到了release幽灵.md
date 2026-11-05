@@ -1,6 +1,6 @@
 ---
 title: 鼠标绑定时灵时不灵，我在 Hyprland Lua fork 里抓到了 release 幽灵
-date: 2026-11-08 21:30:00
+date: 2026-11-06 21:30:00
 tags:
   - Linux
   - Omarchy
