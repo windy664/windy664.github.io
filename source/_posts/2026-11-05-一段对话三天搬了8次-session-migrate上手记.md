@@ -1,0 +1,441 @@
+---
+title: 一段对话三天搬了 8 次：session-migrate 上手记
+date: 2026-11-05 22:40:00
+categories: [技术分享]
+tags: [session-migrate, opencode, codex, kimi-code, claude-code, AI agent]
+description: 用 session-migrate 在 opencode、codex、kimi-code、pi、claude 之间搬同一份对话，三天搬了 8 次，记录 catalog 和 transfer 的用法，以及源 CLI 版本被钉死的坑。
+---
+
+## 八个 ID，五个工具
+
+2026 年 10 月 11 日到 14 日，我在推进一个叫 Ru41 的项目，主对话开在 codex 里。因为同时开着好几个 agent CLI 协同干活，这段对话三天里被导出导入了一共 8 次，链路是：codex → kimi → codex → opencode → pi → claude → kimi → codex，横跨 5 个工具。每次搬家，会话在新工具里都会拿到一个新 ID：
+
+```text
+codex    01a132f1-a2f8-7773-8cd9-82e8c3044a6d
+kimi     session_f843f88c-...
+codex    a95da046-...
+opencode ses_7c076e50...
+pi       b0f1014d-...
+claude   62ee1e16-...
+kimi     session_357ec7a1-...
+codex    4bb90a3a-...
+```
+
+这些工具我都在用，各有各的长处，一段活常常是这边起头、那边收尾。搬到第三次之后我自己都糊涂了，问替我操作的 agent：「你是不是搞错了 那个是旧的对话 因为我们是多个agent一起协同开发的所以才导会话那么多次的」。多个 agent 协同开发时，人要带着同一段上下文在不同工具之间切换，会话不跟着走，活就断在一半。复制粘贴聊天记录也能续上，但工具调用、文件状态、thinking 这些上下文全丢了。
+
+这篇文章记录这 8 次搬家怎么用 session-migrate 做的，以及踩过的坑。
+
+## 每家 CLI 存对话的地方都不一样
+
+手工搬家基本不可行，原因是六家工具的会话存储从位置到格式完全不同。下面是我在自己机器上逐个确认过的存储位置与形态：
+
+| 工具 | 会话存储 | 证据出处 |
+|---|---|---|
+| opencode | `~/.local/share/opencode/opencode.db`（SQLite，带 `-shm`/`-wal`）；旧的 `storage/` 目录还在但 `storage/session` 下是空的 | S1：`ls ~/.local/share/opencode` 输出 `auth.json log opencode.db opencode.db-shm opencode.db-wal repos snapshot storage tool-output`；`ls ~/.local/share/opencode/storage/session` 无任何输出 |
+| kimi-code | `~/.kimi-code/sessions/wd_<目录名>_<hash>/session_<uuid>/agents/main/wire.jsonl` + 同目录 `state.json`；另有全局索引 `~/.kimi-code/session_index.jsonl`（每行 `{"sessionId":...,"sessionDir":...,"workDir":...}`） | S1/S2/S3 反复出现 |
+| codex | `~/.codex/sessions/年/月/日/rollout-<时间戳>-<uuid>.jsonl`；索引 `~/.codex/session_index.jsonl`（`{"id":...,"thread_name":...,"updated_at":...}`）；`~/.codex/` 下还有 `thread_history_1.sqlite`、`state_5.sqlite` 等一排 SQLite | S2：`ls ~/.codex/`；S3：迁移输出路径 |
+| pi | `~/.pi/agent/sessions/--home-windy--/<时间戳>_<uuid>.jsonl`（会话是 parentId 树结构） | S3 迁移输出 |
+| claude code | `~/.claude/projects/-home-windy/<uuid>.jsonl` | S3 迁移输出 |
+| zcode | `~/.zcode/v2/tasks-index.sqlite`（Electron 桌面应用，无公开导入接口） | S3 探查 |
+
+JSONL、SQLite、parentId 树，三种形态都齐了。而且 ID 格式互不相通，kimi 带 `session_` 前缀，opencode 是 `ses_` 加一串混合大小写，互相之间无法对账。更麻烦的是存储位置还会随版本漂移：opencode 旧版把会话放在 `storage/session` 目录，新版挪进了 SQLite，目录还留着但已经空了。
+
+从这张表还能看出一个分层：kimi、codex、claude 的会话是一行一行的 JSONL 文本，肉眼就能看、脚本就能解析，这类工具之间搬家天然容易；opencode 和 zcode 把会话收进 SQLite，没有文档化的表结构，也没有公开的导入接口，这类工具只能依赖它自己的导出入口。session-migrate 对这两类工具的处理方式不一样，后面版本钉死那个坑正是出在后者身上。想写个脚本自己转换，等于要给六种私有格式各写一遍解析器和生成器，还要跟着每个工具的版本升级走，投入产出完全不成立。
+
+opencode 那一格值得单独说。第一次对它做迁移时报了版本错（后文细说），我想绕过 CLI 直接读会话文件，结果连文件都没找到：
+
+```bash
+find ~/.local/share/opencode -name "*ses_f1ca8d1f1ffeItKlLEPM3cSJkh*"
+# 无结果（只找到二进制 ~/.opencode/bin/opencode，opencode --version = 1.19.0）
+
+find ~/.local/share/opencode ~/.opencode -maxdepth 6 -name "*f1ca8d1f1ffe*"
+# 仍然无结果
+
+ls ~/.local/share/opencode
+# auth.json log opencode.db opencode.db-shm opencode.db-wal repos snapshot storage tool-output
+
+ls ~/.local/share/opencode/storage/session | head
+# 无输出
+```
+
+两轮 `find` 都扑空，`storage/session` 目录是空的，会话实际躺在 `opencode.db` 这个 SQLite 里。这就堵死了「不依赖工具自己导出」的路线：会话在数据库里，格式没有文档，工具帮助里说的「official export」只能靠 CLI 本体完成。所以后面所有涉及 opencode 的迁移，都得先解决一个版本问题。
+
+## 搬家用的工具：session-migrate
+
+我机器上的 session-migrate 是 uv tool 装的 Python 包，`~/.local/bin/session-migrate` 是个符号链接，指向 uv 的 tools 目录。版本 0.11.0，查过 PyPI，这就是最新版。它有五个子命令：inspect、convert、import、transfer、catalog。顶层帮助如下：
+
+```text
+usage: session-migrate [-h] [--version] [--catalog CATALOG]
+                       {inspect,convert,import,transfer,catalog} ...
+
+Migrate native sessions among supported coding agent CLIs.
+
+positional arguments:
+  {inspect,convert,import,transfer,catalog}
+    inspect             print a content-free structural session summary
+    convert             convert a session file
+    import              convert and install into a target agent home
+    transfer            find a native session by ID or catalog title and
+                        import it
+    catalog             index, list, and search native sessions across agent
+                        homes
+
+options:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  --catalog CATALOG     catalog database (default: SESSION_MIGRATE_CATALOG or
+                        XDG state)
+```
+
+支持的源格式有 18 种：
+
+```text
+claude,codex,pi,omp,opencode,copilot,antigravity,cursor,vibe,muse,qwen,kimi,grok,kilo,openhands,hermes,mastracode,devin
+```
+
+`transfer/convert/import` 的 `--to` 在此基础上多一个 `opencollab`，所以目标是 19 种。帮助原文注明：「Cursor support is pinned, text-only, and experimental」。
+
+日常用得最多的是 transfer，它的关键参数节选：
+
+```text
+--catalog-id  --title  --source-home  --source-cli  --source-cwd  --home
+--dry-run  --session-id  --cwd
+--target-cli-version   # metadata version only; the writer schema remains pinned
+--target-cli           # OpenCode, Kilo, Antigravity, or Cursor executable for native import
+--model-provider  --model
+```
+
+`--source-cli` / `--target-cli` / `--target-cli-version` 这三个参数后面还会反复出现，我踩的最麻烦的坑全和它们有关。
+
+## 先用 catalog 把散落的会话索引进一个库
+
+transfer 可以直接给会话 ID，但时间久了我记不住哪段对话在哪个工具里。catalog 子命令解决这个问题：`catalog refresh` 会增量扫描所有配置过的会话根目录，把每条会话的格式、标题、状态索引进一个本地库。transfer 后面所有案例用的都是 catalog-id，而不是裸的会话 ID，因为 catalog-id 短、能搜索、还自带格式信息，不用我再告诉工具会话存在哪。
+
+一次 `catalog refresh` 的统计输出（`catalog refresh 2>&1 | tail -5`）：
+
+```text
+scanned: 26
+unchanged: 230
+missing: 0
+root_errors: 0
+statuses: {"candidate": 248, "corrupt": 3, "oversized": 1, "unsupported": 4}
+```
+
+256 条索引里，candidate 248、corrupt 3、oversized 1、unsupported 4。这四种状态基本对应四类情况：candidate 可以正常迁移；corrupt 是文件读不出来；unsupported 是格式还没适配；oversized 是会话大到工具拒绝处理。更早的一次统计里 candidate 是 229，这个数字随着会话增长一直在变。`scanned: 26 / unchanged: 230` 这个比例也能看出 refresh 是增量的，绝大多数会话没变化就直接跳过，随手跑一次没什么开销。除了 refresh，catalog 还有 roots（管理要扫描的根目录）、list、search、show 四个子命令。
+
+搜索是按标题子串和 UUID 匹配的。`catalog search octo` 的输出（表头加四行）：
+
+```text
+CATALOG_ID	FORMAT	KIND	STATUS	UUID	TITLE
+8de00084aec04630	codex	main	oversized	01a10025-e4ef-7d41-bac5-f0ea16caba6a	octo意图agent比赛
+b83a2961d4264263	codex	main	candidate	73896c4f-f952-5ab5-801b-03094731d6b9	帮我找找我codex上的对话玩家octo意图比赛的 和王老师对齐了一下： 观测周期不固定，A-D这四张卡的周期就不一样。 望远镜可能会坏多次，但同一时间最多只存在一个故障。 网站暂时应该是正常的，榜单数据来自海外的数据服务，国内部分网络环境下可能加载较慢或失败。可以刷新重试，或换一个网络环境 观测周期按每张卡的配置，initialize 中会下发具体的夜数和观测日程。目前公开的练习卡都是 38 夜
+b3cc8fcfb9504c6e	kimi	main	candidate	session_1fe7abfd-8160-48ac-8d1e-6aee27b609bd	帮我找找我codex上的对话玩家octo意图比赛的 和王老师对齐了一下： 观测周期不固定，A-D这四张卡的周期就不一样。 …（同上，略）
+a94f7460f56b4551	opencode	main	candidate	ses_f1ca8d1f1ffeItKlLEPM3cSJkh	参与agenticapp26比赛和OctoSense项目研究
+```
+
+第一行那条 oversized 的 codex 会话后面还会提到。`catalog list --format opencode --limit 10` 的前 5 行：
+
+```text
+CATALOG_ID	FORMAT	KIND	STATUS	UUID	TITLE
+c4bf3dca82dd468a	opencode	main	candidate	ses_edfbeb15cffeWuPawjmp6o0cVS	Codex对话转opencode或pi的工具
+5f44104422ed4a8d	opencode	subagent	candidate	ses_edf91f5fcffew631m5CkeJp7Ou	摸清 adapter 接口与接线点 (@explore subagent)
+aa6940ec26fb4de0	opencode	subagent	candidate	ses_edf9bec34ffe8ahfgxnHK6cPOc	研究 OpenCollab 会话存储格式 (@explore subagent)
+5bed7ea24d84427f	opencode	main	candidate	ses_edfacb6ffffevdqaY159BiLOxT	部署Pi code
+0eb0728c29b440f1	opencode	main	candidate	ses_ee08f0a97ffeo2fHNxSPUVK7au	问候
+```
+
+可以看出 opencode 的 subagent 会话也会被索引（KIND 列是 subagent）。加 `--include-paths` 时 PATH 列形如 `opencode:ses_...`。
+
+上手时我猜错过两次参数。列表的过滤参数是 `--format` 不是 `--agent`，刷新的子命令叫 refresh 不叫 index：
+
+```text
+session-migrate: error: unrecognized arguments: --agent opencode
+
+invalid choice: 'index' (choose from refresh, roots, list, search, show)
+```
+
+都是一看报错就能改的小问题，但既然猜错了，记下来省得下次再猜。
+
+## transfer：一条命令搬一次家
+
+最顺的一次是 codex 到 kimi 的「Ru41项目开发」，一条命令直接成功：
+
+```bash
+session-migrate transfer 01a132f1-a2f8-7773-8cd9-82e8c3044a6d --from codex --to kimi
+```
+
+结果 JSON（节选）：
+
+```json
+{
+  "cwd": "/home/torin",
+  "dropped_events": {
+    "context": 15,
+    "opaque": 306,
+    "opaque:paginated_provider_message": 58,
+    "thinking:private": 41,
+    "tool_call:non_object_input": 62
+  },
+  "dry_run": false,
+  "manifest": "/home/torin/.kimi-code/session-migrate/manifests/session_f843f88c-5414-49eb-837a-cf6b9221124b.json",
+  "output": "/home/torin/.kimi-code/sessions/wd_torin_67aab5f0c121/session_f843f88c-5414-49eb-837a-cf6b9221124b/agents/main/wire.jsonl",
+  "records": 180,
+  "session_id": "session_f843f88c-5414-49eb-837a-cf6b9221124b",
+  "sha256": "5feb0789e32fa57c146295d894e0528b9dc97dc6b7ff95e30962a1439ccdf014",
+  "source_format": "codex",
+  "target_format": "kimi",
+  "warnings": [ … 5 条 dropped_event_kind …,
+    { "code": "unvalidated_source_version",
+      "message": "source version differs from the pinned integration target",
+      "observed": "0.162.1", "validated": "0.144.4" }
+  ]
+}
+```
+
+值得看的是 `dropped_events`：迁移不是无损的，丢掉的每一类事件都逐类报数。180 条记录里丢了 306 个不透明事件、41 条私有 thinking、62 个输入非对象形态的工具调用。这个报数设计我挺认可，丢在哪、丢了多少，不用自己去 diff。结果里还带 manifest 路径和输出文件的 sha256，manifest 记录了这次迁移的来源和参数，sha256 可以事后校验输出文件没有被二次改动，出问题时能对上账。
+
+再贴一个大的。opencode 到 kimi，1775 条记录那次：
+
+```bash
+session-migrate transfer --catalog-id a94f7460f56b4551 --from opencode --to kimi --source-cli /tmp/oc117/node_modules/.bin/opencode
+```
+
+完整的 dropped_events：
+
+```json
+{
+  "cwd": "/home/torin",
+  "dropped_events": {
+    "opaque:opencode_assistant_error": 8,
+    "opaque:opencode_file_source_metadata": 9,
+    "opaque:opencode_session_summary": 1,
+    "opaque:opencode_step-finish_part": 837,
+    "opaque:opencode_step-start_part": 840,
+    "opaque:opencode_tool_metadata": 794,
+    "opaque:opencode_user_summary_metadata": 98,
+    "thinking:private": 570
+  },
+  "dry_run": false,
+  "manifest": "/home/torin/.kimi-code/session-migrate/manifests/session_cce6eb78-b36b-45c2-ab17-4b9bf46bbc47.json",
+  "output": "/home/torin/.kimi-code/sessions/wd_torin_67aab5f0c121/session_cce6eb78-b36b-45c2-ab17-4b9bf46bbc47/agents/main/wire.jsonl",
+  "records": 1775,
+  "session_id": "session_cce6eb78-b36b-45c2-ab17-4b9bf46bbc47",
+  "sha256": "b555b50ddcacb8434f7cfd338118cc4cce93956b8310948e99705c541d20ca59",
+  "source_format": "opencode",
+  "target_format": "kimi",
+  "warnings": [ … 8 条 dropped_event_kind …,
+    { "code": "unvalidated_source_version",
+      "message": "source version differs from the pinned integration target",
+      "observed": "1.18.32", "validated": "1.17.20" }
+  ]
+}
+```
+
+840 个 step-start、837 个 step-finish、794 个工具元数据、570 条私有 thinking，这些是两边的会话模型对不上而不得不丢的部分。对话的正文和工具调用结果留下来了，对继续干活够用。
+
+这条的 warning 里有个可疑细节：我当时明明用 npm 装的 1.17.20 做导出（原因见下一节），warning 里 `observed` 却是 `1.18.32`。工具到底从哪里读到的这个版本号，我没查清楚。
+
+迁移过来的会话在目标工具里是落得住的。导入后的 kimi 会话，state.json 里带 `"custom": {"writer": "session-migrate"}`，标题被保留（如 `"title": "参与agenticapp26比赛和OctoSense项目研究", "titleKind": "custom"`）。跑一次 `catalog refresh` 之后，还能从 kimi 侧把它搜回来：
+
+```text
+1cea5a5c8e9e4497	kimi	main	candidate	session_cce6eb78-...	参与agenticapp26比赛和OctoSense项目研究
+```
+
+反向的 kimi 到 codex 就没那么干净了。510 条记录里 `session:title` 被丢掉：
+
+```json
+{
+  "dropped_events": {
+    "opaque:kimi_injection_message": 11,
+    "opaque:kimi_runtime_record": 794,
+    "session:title": 1,
+    "thinking": 51
+  },
+  "manifest": "/home/torin/.codex/session-migrate/manifests/a95da046-db1c-4646-909d-bc46562f277c.json",
+  "output": "/home/torin/.codex/sessions/2026/10/13/rollout-2026-10-13T01-47-39-a95da046-db1c-4646-909d-bc46562f277c.jsonl",
+  "records": 510,
+  "session_id": "a95da046-db1c-4646-909d-bc46562f277c",
+  "sha256": "43b435000c75d5ba1ab2d694cc76b2bd7855f305fc0bd748751359dbba57d663",
+  "source_format": "kimi", "target_format": "codex"
+}
+```
+
+标题丢了不是大事，但导入后的 codex 会话标题变成了「RU41项目开发- 2026-10-14」，和原标题「Ru41项目开发」有出入，在 catalog 里找的时候得多看一眼。
+
+往 opencode 这种方向写，情况又不一样。opencode 没有公开的文件级导入接口（前面说过会话在 SQLite 里），所以要走它的「原生导入」，必须额外给 `--target-cli` 指一个 opencode 可执行文件：
+
+```bash
+session-migrate transfer --from codex --to opencode --catalog-id 1d1aa596e2874183 --target-cli /tmp/oc11720/node_modules/.bin/opencode
+```
+
+```json
+{
+  "dropped_events": {
+    "context:privileged_image": 4, "message:privileged_role": 5, "opaque": 75,
+    "thinking": 18, "tool_call:non_object_input": 25, "tool_result:native_order_associated": 1
+  },
+  "manifest": "/home/torin/.local/state/session-migrate/manifests/opencode/ses_7c076e507434425ab75ba7eb3478bca8.json",
+  "output": "opencode:ses_7c076e507434425ab75ba7eb3478bca8",
+  "records": 597,
+  "session_id": "ses_7c076e507434425ab75ba7eb3478bca8",
+  "sha256": "45fc16d3f850f1dce5a267aaa5f5a8510e176ccea693c67d074c5f4204f074f0",
+  "source_format": "codex", "target_format": "opencode"
+}
+```
+
+另外两个方向也各跑了一次，都一条命令成功：codex 到 claude 471 条，输出落在 `~/.claude/projects/-home-windy/62ee1e16-9e37-4405-b0b7-8828bf36bd49.jsonl`；codex 到 pi 473 条，输出在 `~/.pi/agent/sessions/` 下。这两次的目的分别是给 zcode 导入铺路和补全工具链，此处不多展开。
+
+搬完之后怎么接着聊，各工具的打开方式不同。kimi 靠全局索引定位会话，codex 靠自己的索引和按日期分层的目录，pi 则把会话绑在启动目录上，所以必须在绑定的 cwd 下启动才能看到：
+
+```bash
+kimi -r session_<完整id>   # 简写前缀会报 not found，必须带 session_ 前缀的完整 ID；kimi session list 可非交互列出会话
+codex resume <id>
+pi --session <id>          # 或 pi -r；会话按目录隔离，要在绑定的 cwd 下启动
+```
+
+几乎每次迁移的结果 JSON 里都有 `unvalidated_source_version` 警告，两次典型对比：
+
+```text
+codex:    observed 0.162.1  / validated 0.144.4
+opencode: observed 1.18.32  / validated 1.17.20
+```
+
+意思是源工具的版本和工具钉死的「验证过」的版本不一致，转换质量不保证。所以 session-migrate 的迁移是「最好努力」而不是无损的，用之前要对这点有预期。
+
+## 最麻烦的坑：opencode 版本被钉死在 1.17.20
+
+前面所有带 `--source-cli /tmp/oc117/...` 或 `--target-cli /tmp/oc11720/...` 的命令，都是在绕这个坑。
+
+transfer 对 opencode 的双向处理都钉死了 CLI 版本 1.17.20。我本机装的是 1.19.0，两个方向都会被拒，而且报错措辞还不一样。源方向（`--from opencode`）：
+
+```text
+session-migrate: error: OpenCode source CLI version mismatch: expected 1.17.20, observed 1.19.0
+Command failed with exit code: 2.
+```
+
+目标方向（`--to opencode`）：
+
+```text
+session-migrate: error: OpenCode CLI version mismatch: expected 1.17.20, observed 1.19.0
+Command failed with exit code: 2.
+```
+
+一开始我以为 `--target-cli-version` 这个参数就是用来放宽版本的，给它 1.19.0 再跑，还是被拒：
+
+```bash
+session-migrate transfer --from codex --to opencode --catalog-id 1d1aa596e2874183 --target-cli-version 1.19.0 --dry-run
+# session-migrate: error: automatic OpenCode import requires target metadata version 1.17.20; convert-only artifacts may opt into unvalidated metadata versions
+```
+
+回头看帮助原文就明白了，`--target-cli-version` 的说明是「metadata version only; the writer schema remains pinned」：它只改写进结果里的元数据标注，不动版本校验。报错里那句「convert-only artifacts may opt into unvalidated metadata versions」也说了，想用别的版本只能走 convert 产出中间文件，不能走自动导入。钉死版本这件事本身能理解：opencode 的导出接口没有稳定性承诺，格式随版本变，工具作者只对验证过的那个版本的行为负责，放开版本等于把验证责任转嫁给用户。难受的点在于校验和参数的语义没对齐，`--target-cli-version` 这个名字会让人以为它能放宽校验。
+
+真正可行的绕法是把旧版 opencode 装进临时目录，用 `--source-cli` 或 `--target-cli` 指过去。源方向：
+
+```bash
+mkdir -p /tmp/oc117 && cd /tmp/oc117 && npm install opencode-ai@1.17.20 --no-audit --no-fund 2>&1 | tail -3 && ls node_modules/.bin/
+# added 5 packages in 10s
+# opencode
+
+session-migrate transfer --catalog-id a94f7460f56b4551 --from opencode --to kimi \
+  --source-cli /tmp/oc117/node_modules/.bin/opencode
+```
+
+目标方向用 `--prefix` 装到另一个目录：
+
+```bash
+mkdir -p /tmp/oc11720 && npm install --prefix /tmp/oc11720 opencode-ai@1.17.20
+session-migrate transfer --from codex --to opencode --catalog-id 1d1aa596e2874183 \
+  --target-cli /tmp/oc11720/node_modules/.bin/opencode
+```
+
+这个方案我比较满意的地方是不动全局的 opencode，装在 /tmp 里重启自动清理，代价只是每次迁移前多装一次包（10 秒左右）。
+
+## 其他几个踩过的坑
+
+### search 搜不到别名，选错了会话
+
+用户（也就是我）说「opencode 上那个 octo意图比赛」，agent 用 `catalog search octo` 只匹配到「参与agenticapp26比赛和OctoSense项目研究」，看着相关就转了，就是前面那条 1775 条的迁移。我纠正「你好像转化错了」之后，改搜「意图」才找到真正的会话 `772d54e1eea84685 octo意图比赛`，重转了一次。前后两次的命令对比：
+
+```bash
+# 第一次（选错）：
+session-migrate transfer --catalog-id a94f7460f56b4551 --from opencode --to kimi --source-cli /tmp/oc117/node_modules/.bin/opencode
+
+# 第二次（重转）：
+session-migrate transfer --catalog-id 772d54e1eea84685 --from opencode --to kimi --source-cli /tmp/oc117/node_modules/.bin/opencode
+```
+
+search 按标题子串匹配，口头说的别名如果在标题里不出现就搜不到。转之前应该把搜到的候选标题念给人确认，而不是看到关键词沾边就直接动手。
+
+### pi 格式自己写的会话自己读不回来
+
+从 pi 往 kimi 转的时候直接报错：
+
+```text
+session-migrate: error: Pi message entry has an unsupported role
+```
+
+排查发现 pi 会话 JSONL 里有一条 `role:"system"` 的 message 条目（第 475 行），而这条是 session-migrate 自己的 pi writer 之前写进去的，它自己的 pi reader 反而不认。这是标准的 round-trip bug，说明 writer 和 reader 的测试没有对齐。
+
+第一版绕行方案是直接把那条 system 条目删掉，结果换来第二个错：
+
+```text
+session-migrate: error: Pi session tree references a missing parent
+```
+
+pi 的会话是 parentId 树结构，删节点会把子节点挂在空处。最终方案是把该节点（id `dd52cd2c`，parent `0e60a4a5`）摘除，把它的子节点 `c44b435f` 重接到祖父，写进 /tmp 副本再用 import 导入：
+
+```bash
+# pi → kimi（对临时副本去掉 system 条目并重接子节点后）
+session-migrate import --to kimi --format pi /tmp/pi_session_ru41_nosystem.jsonl --cwd /home/torin
+# → session_357ec7a1-1370-4d01-a345-618fe5c7efcc, records 666
+# dropped: opaque:pi_assistant_stop_reason_error 4, opaque:pi_thinking_level_change 1,
+#   opaque:pi_tool_result_details 7, opaque:unknown_pi_entry 3, thinking:private 32
+
+# 同一副本 → codex
+session-migrate import --to codex --format pi /tmp/pi_session_ru41_for_codex.jsonl --cwd /home/torin
+# → 4bb90a3a-4498-48d6-8a46-379f12eb672d, records 856
+# output: /home/torin/.codex/sessions/2026/10/13/rollout-2026-10-13T01-47-39-4bb90a3a-....jsonl
+# dropped: 上述 5 类 + tool_result:is_error 2
+```
+
+两次都成功了，pi 的原会话文件没动过，修的是 /tmp 里的副本。这意味着只要将来还要从这个 pi 会话转出，都得再走一遍这套手工修文件的流程，除非工具修掉这个 bug。我把修好的副本留了下来，算是给这个坑上了个保险。
+
+### 搬进 kimi 之后没标题、resume 找不到，要手工补两处
+
+codex 到 kimi 的导入显示成功，但 `kimi -r` 找不到这个会话。原因有两层：一是导入的 state.json 里没有 `title` 字段（正常会话有 `"title":"...","titleKind":"replaceable"`），二是没注册进全局的 `~/.kimi-code/session_index.jsonl`，而 resume 是靠这个索引找会话的。当时的补救记录：
+
+```text
+session-migrate 本身没带标题，我手动补了两处：
+1. state.json 加了 "title": "Ru41项目开发"
+2. ~/.kimi-code/session_index.jsonl 补了一条索引记录
+```
+
+索引行的格式：
+
+```json
+{"sessionId":"...","sessionDir":"...","workDir":"..."}
+```
+
+另外 resume 必须用带 `session_` 前缀的完整 ID，只给前缀会报 not found，大概是按索引整串匹配而不是前缀匹配。这两处手工补丁说明 kimi 这个目标的导入路径还没打磨完整：会话文件本身写得对，但让工具「看见」这个会话所需的元数据（标题、全局索引）要自己补。
+
+### 索引里也有搬不了的会话
+
+256 条索引里，corrupt 3 条、oversized 1 条、unsupported 4 条。那条 oversized 的 codex 会话就是前面 search octo 输出的第一行：
+
+```text
+8de00084aec04630	codex	main	oversized	01a10025-e4ef-7d41-bac5-f0ea16caba6a	octo意图agent比赛
+```
+
+这条超大的会话走不了正常迁移，我也没有找到后续的处理办法，它就留在原工具里了。索引把不可迁移的会话标出来，至少让人不用在它身上白费功夫。
+
+## 跑通之后：一条命令搬完 2083 条记录
+
+最大的一次迁移，就是选错会话之后改用正确 catalog-id 的那次重转：
+
+```bash
+session-migrate transfer --catalog-id 772d54e1eea84685 --from opencode --to kimi --source-cli /tmp/oc117/node_modules/.bin/opencode
+# → session_7ee1edea-8453-4861-94f6-ed378cbb137d, 2083 records, warnings: 7
+# output: ~/.kimi-code/sessions/wd_torin_67aab5f0c121/session_7ee1edea-8453-4861-94f6-ed378cbb137d/agents/main/wire.jsonl
+```
+
+2083 条记录，一条命令，warnings 7 条。回到开头的链路：三天 8 次搬家、5 个工具，每次都是 refresh 索引、search 找到目标、transfer 一条命令搬过去、必要时补一下目标侧的索引行。这套流程验证下来是反复可用的，第 8 次和第 1 次的操作成本没有区别。代价前面都列过了：版本钉死要靠临时目录绕，pi 格式有 round-trip bug 要手工修文件，导入 kimi 后要补标题和索引，每次迁移都有逐类可查的损耗。对一个同时开着好几个 agent CLI 的人来说，这些代价换来的，是上下文能跟着人走。
